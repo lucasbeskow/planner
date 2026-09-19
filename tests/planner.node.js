@@ -107,3 +107,14 @@ test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
   assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-005').status, 'done');
   assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-005').source, '.planner/tickets/PLN-005-fonte-de-verdade.md');
 });
+
+test('o índice contém os dados necessários para o dashboard', () => {
+  const index = buildIndex(root, readEntities(root));
+  const ticket = index.tickets.find(item => item.id === 'PLN-002');
+
+  assert.ok(index.repository.name);
+  assert.ok(index.repository.initiative);
+  assert.ok(index.repository.branch);
+  assert.deepEqual(Object.keys(index.summary), ['total', 'planned', 'inProgress', 'blocked', 'done']);
+  assert.deepEqual(Object.keys(ticket).sort(), ['dependsOn', 'description', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type']);
+});

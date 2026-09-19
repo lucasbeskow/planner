@@ -8,13 +8,13 @@ Renderizar uma visão de acompanhamento a partir de um índice local, sem adicio
 
 ## Estado atual
 
-O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeção gerada a partir dos arquivos Markdown versionados e valida:
+O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeção gerada a partir dos arquivos Markdown versionados e oferece:
 
-- organização visual;
-- modelo de status;
-- leitura de iniciativas e tickets;
+- resumo da iniciativa e contadores por status;
+- organização visual dos tickets em colunas;
 - navegação entre resumo e detalhes;
-- visualização de dependências.
+- visualização de dependências, labels e fonte Markdown;
+- mensagem orientativa quando o índice não pode ser carregado.
 
 Para regenerar o índice depois de editar uma entidade:
 
@@ -28,8 +28,6 @@ Para testar, sirva a raiz do repositório por HTTP e abra `/planner/`. A leitura
 
 ## Próximos passos
 
-1. substituir a fixture por parser de Markdown;
-2. validar frontmatter e relações;
-3. gerar o índice automaticamente;
-4. adicionar testes próprios do Planner;
-5. definir o comando local de inicialização.
+1. definir a CLI semântica do Planner;
+2. expor uma integração local somente leitura para agentes;
+3. criar a skill de workflow do Planner.
