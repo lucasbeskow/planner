@@ -2,7 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
-const { contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
+const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
 
 const root = path.resolve(__dirname, '../..');
 
@@ -63,4 +63,13 @@ test('o índice gerado permanece válido', () => {
   assert.equal(index.summary.total, index.tickets.length);
   assert.equal(index.repository.branch, 'planner');
   assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-003').source, '.planner/tickets/PLN-003-ler-markdown.md');
+});
+
+test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
+  const entities = readEntities(root);
+  const index = buildIndex(root, entities);
+
+  assert.equal(index.summary.total, entities.length);
+  assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-005').status, 'done');
+  assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-005').source, '.planner/tickets/PLN-005-fonte-de-verdade.md');
 });
