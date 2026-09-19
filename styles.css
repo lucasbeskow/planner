@@ -1,0 +1,62 @@
+:root {
+  color-scheme: dark;
+  --bg: #111318;
+  --surface: #191c23;
+  --surface-hover: #222631;
+  --border: #303643;
+  --text: #f3f5f7;
+  --muted: #9da6b5;
+  --blue: #78a9ff;
+  --green: #64d69b;
+  --yellow: #f1c75b;
+  --red: #ff8d8d;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); }
+button { font: inherit; }
+.shell { width: min(1440px, calc(100% - 48px)); margin: 0 auto; padding: 48px 0 72px; }
+.topbar, .section-heading, .column-heading, .ticket-meta { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.topbar { align-items: flex-start; margin-bottom: 40px; }
+h1, h2, h3, p { margin: 0; }
+h1 { max-width: 720px; font-size: clamp(2rem, 4vw, 3.5rem); letter-spacing: -0.06em; }
+h2 { font-size: 1.5rem; letter-spacing: -0.03em; }
+h3 { font-size: .85rem; }
+.eyebrow, .ticket-id { color: var(--muted); font-size: .72rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+.muted { color: var(--muted); font-size: .85rem; }
+code { color: var(--blue); }
+.local-badge { border: 1px solid #395a8e; border-radius: 999px; color: var(--blue); font-size: .7rem; font-weight: 800; letter-spacing: .08em; padding: 8px 12px; }
+.summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 48px; }
+.summary-card { background: var(--surface); border: 1px solid var(--border); border-top: 3px solid var(--blue); border-radius: 10px; display: grid; gap: 12px; padding: 18px; }
+.summary-card span { color: var(--muted); font-size: .8rem; }
+.summary-card strong { font-size: 2rem; }
+.status-in_progress { border-top-color: var(--green); }
+.status-blocked { border-top-color: var(--red); }
+.status-done { border-top-color: var(--yellow); }
+.workspace { background: rgba(25, 28, 35, .55); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+.section-heading { margin-bottom: 24px; }
+.board { display: grid; grid-template-columns: repeat(4, minmax(210px, 1fr)); gap: 14px; overflow-x: auto; }
+.column { min-height: 280px; background: rgba(17, 19, 24, .6); border-radius: 10px; padding: 14px; }
+.column-heading { margin-bottom: 14px; }
+.column-heading span { background: var(--surface-hover); border-radius: 999px; color: var(--muted); font-size: .75rem; padding: 3px 8px; }
+.ticket-list { display: grid; gap: 10px; }
+.ticket { display: grid; gap: 9px; width: 100%; border: 1px solid var(--border); border-radius: 9px; background: var(--surface); color: var(--text); cursor: pointer; padding: 14px; text-align: left; transition: border-color .15s, background .15s, transform .15s; }
+.ticket:hover, .ticket:focus-visible { background: var(--surface-hover); border-color: var(--blue); outline: none; transform: translateY(-1px); }
+.ticket strong { font-size: .9rem; line-height: 1.3; }
+.ticket-description { color: var(--muted); font-size: .78rem; line-height: 1.4; }
+.ticket-meta { color: var(--muted); font-size: .7rem; }
+.empty { color: var(--muted); font-size: .8rem; padding: 18px 4px; }
+.details-dialog { width: min(560px, calc(100% - 32px)); background: var(--surface); border: 1px solid var(--border); border-radius: 14px; color: var(--text); padding: 28px; }
+.details-dialog::backdrop { background: rgba(0, 0, 0, .7); }
+.dialog-close { float: right; border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 1.5rem; }
+.details-dialog h2 { margin: 10px 0 12px; }
+.details-dialog > p:not(.eyebrow) { color: var(--muted); line-height: 1.5; }
+.details-list { display: grid; gap: 14px; margin: 28px 0 0; }
+.details-list div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; border-top: 1px solid var(--border); padding-top: 12px; }
+dt { color: var(--muted); font-size: .8rem; }
+dd { margin: 0; font-size: .85rem; }
+.label { display: inline-block; background: #29344a; border-radius: 999px; color: var(--blue); margin: 0 4px 4px 0; padding: 4px 8px; }
+.error { margin: 15vh auto; max-width: 560px; text-align: center; }
+.error p { color: var(--muted); margin-top: 12px; }
+@media (max-width: 800px) { .shell { width: min(100% - 28px, 680px); padding-top: 28px; } .topbar { display: grid; } .summary-grid { grid-template-columns: repeat(2, 1fr); } .board { grid-template-columns: repeat(4, 250px); } }
