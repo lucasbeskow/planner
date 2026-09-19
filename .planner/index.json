@@ -4,9 +4,9 @@
     "initiative": "Planner local — do M0 à edição segura"
   },
   "summary": {
-    "total": 9,
+    "total": 16,
     "draft": 0,
-    "planned": 0,
+    "planned": 7,
     "inProgress": 1,
     "blocked": 0,
     "done": 8,
@@ -160,6 +160,117 @@
         "PLN-002"
       ],
       "source": ".planner/decisions/PLN-009-fixture-oficial.md"
+    },
+    {
+      "id": "PLN-010",
+      "type": "initiative",
+      "title": "M2 — contexto de engenharia",
+      "description": "Dar ao ticket o contexto de engenharia necessário para executá-lo e revisá-lo sem depender do histórico de conversa: critérios verificáveis, referências válidas, evidências e ligação com o código entregue.",
+      "status": "planned",
+      "priority": "high",
+      "phase": "M2",
+      "labels": [
+        "roadmap"
+      ],
+      "dependsOn": [],
+      "source": ".planner/initiatives/PLN-010-m2-contexto-de-engenharia.md"
+    },
+    {
+      "id": "PLN-011",
+      "type": "task",
+      "title": "Apontar tickets sem critérios de aceite",
+      "description": "Mostrar quais tickets não têm critérios de aceite verificáveis, antes que alguém comece ou feche o trabalho.",
+      "status": "planned",
+      "priority": "high",
+      "phase": "M2",
+      "labels": [
+        "validacao"
+      ],
+      "dependsOn": [
+        "PLN-010"
+      ],
+      "source": ".planner/tickets/PLN-011-apontar-tickets-sem-criterios-de-aceite.md"
+    },
+    {
+      "id": "PLN-012",
+      "type": "task",
+      "title": "Listar especificações e decisões na UI",
+      "description": "Tornar especificações e decisões recentes visíveis na UI, fora do quadro de tickets.",
+      "status": "planned",
+      "priority": "medium",
+      "phase": "M2",
+      "labels": [
+        "ui"
+      ],
+      "dependsOn": [
+        "PLN-010"
+      ],
+      "source": ".planner/tickets/PLN-012-listar-especificacoes-e-decisoes-na-ui.md"
+    },
+    {
+      "id": "PLN-013",
+      "type": "task",
+      "title": "Validar links e referências externas",
+      "description": "Detectar links quebrados nos corpos das entidades sem depender de rede.",
+      "status": "planned",
+      "priority": "medium",
+      "phase": "M2",
+      "labels": [
+        "validacao"
+      ],
+      "dependsOn": [
+        "PLN-010"
+      ],
+      "source": ".planner/tickets/PLN-013-validar-links-e-referencias-externas.md"
+    },
+    {
+      "id": "PLN-014",
+      "type": "task",
+      "title": "Registrar e projetar evidências de execução",
+      "description": "Transformar o contrato de evidência de fechamento, hoje só de processo, em dado validado e projetado.",
+      "status": "planned",
+      "priority": "high",
+      "phase": "M2",
+      "labels": [
+        "dominio",
+        "evidencia"
+      ],
+      "dependsOn": [
+        "PLN-010"
+      ],
+      "source": ".planner/tickets/PLN-014-registrar-e-projetar-evidencias-de-execucao.md"
+    },
+    {
+      "id": "PLN-015",
+      "type": "task",
+      "title": "Relacionar ticket, commit e pull request",
+      "description": "Ligar cada ticket aos commits e pull requests que o implementam, usando apenas o Git local.",
+      "status": "planned",
+      "priority": "medium",
+      "phase": "M2",
+      "labels": [
+        "git"
+      ],
+      "dependsOn": [
+        "PLN-010"
+      ],
+      "source": ".planner/tickets/PLN-015-relacionar-ticket-commit-e-pull-request.md"
+    },
+    {
+      "id": "PLN-016",
+      "type": "task",
+      "title": "Mostrar grafo visual de dependências",
+      "description": "Visualizar dependências e dependentes como grafo, para achar caminhos bloqueados.",
+      "status": "planned",
+      "priority": "low",
+      "phase": "M2",
+      "labels": [
+        "ui"
+      ],
+      "dependsOn": [
+        "PLN-010"
+      ],
+      "source": ".planner/tickets/PLN-016-mostrar-grafo-visual-de-dependencias.md"
     }
   ]
 }
