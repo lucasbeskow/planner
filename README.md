@@ -49,7 +49,9 @@ O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeç
 - resumo da iniciativa e contadores por status;
 - organização visual dos tickets em colunas;
 - navegação entre resumo e detalhes;
-- visualização de dependências, labels e fonte Markdown;
+- detalhe com corpo Markdown renderizado e progresso dos critérios de aceite;
+- navegação entre dependências e dependentes;
+- visualização de labels e fonte Markdown;
 - mensagem orientativa quando o índice não pode ser carregado.
 
 Para regenerar o índice depois de editar uma entidade:
@@ -130,7 +132,10 @@ Objetos aninhados, textos em várias linhas e âncoras não são aceitos. Linhas
 geram erro com o caminho do arquivo.
 
 A descrição exibida nos cards é o primeiro parágrafo da seção `Objetivo` ou, sem ela, do corpo.
-O corpo completo fica disponível em `npx planner show <id>`.
+O corpo completo fica disponível em `npx planner show <id>` e no detalhe da UI.
+
+O diretório `.planner/` deste repositório é a fixture de demonstração: rode `npx planner-serve`
+na raiz para ver a UI com o planejamento do próprio Planner.
 
 ## Próximos passos
 

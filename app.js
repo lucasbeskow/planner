@@ -1,3 +1,5 @@
+import { acceptanceProgress, escapeHtml, renderMarkdown } from './markdown.mjs';
+
 // Status opcionais só ganham card e coluna quando existe algum item neles.
 const STATUS = [
   ['draft', 'Rascunho', { optional: true }],
@@ -26,15 +28,6 @@ async function loadData() {
     throw new Error(`Não foi possível carregar o índice (${response.status})`);
   }
   return response.json();
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;');
 }
 
 function render(data, branch) {
@@ -81,7 +74,7 @@ function render(data, branch) {
       <section class="workspace">
         <div class="section-heading">
           <div>
-            <p class="eyebrow">M0 · leitura e visualização</p>
+            <p class="eyebrow">leitura e visualização</p>
             <h2>Backlog da iniciativa</h2>
           </div>
           <span class="muted">${tickets.length} tickets indexados</span>
@@ -104,7 +97,7 @@ function render(data, branch) {
   `;
 
   app.querySelectorAll('[data-ticket]').forEach(card => {
-    card.addEventListener('click', () => showDetails(entities.find(entity => entity.id === card.dataset.ticket)));
+    card.addEventListener('click', () => showDetails(entities, card.dataset.ticket));
   });
 }
 
@@ -122,27 +115,74 @@ function ticketCard(ticket) {
   `;
 }
 
-function showDetails(ticket) {
+// Liga cada id ao próprio detalhe; ids fora do índice aparecem sem link.
+function entityLinks(entities, ids, empty) {
+  if (!ids.length) return empty;
+  return ids.map(id => {
+    const entity = entities.find(item => item.id === id);
+    if (!entity) return `<span class="missing">${escapeHtml(id)}</span>`;
+    return `<button class="entity-link" type="button" data-entity="${escapeHtml(id)}" title="${escapeHtml(entity.title)}">${escapeHtml(id)}</button>`;
+  }).join(' ');
+}
+
+// O corpo vem do Markdown de origem, não do índice: o índice guarda só a projeção dos campos.
+async function loadBody(ticket) {
+  if (!ticket.source) return null;
+  const response = await fetch(`../${ticket.source.split('/').map(encodeURIComponent).join('/')}`);
+  if (!response.ok) throw new Error(`Não foi possível carregar ${ticket.source} (${response.status})`);
+  return response.text();
+}
+
+function showDetails(entities, id) {
+  const ticket = entities.find(entity => entity.id === id);
+  if (!ticket) return;
+  const dependents = entities.filter(entity => entity.dependsOn.includes(id)).map(entity => entity.id);
+  document.querySelector('.details-dialog')?.close();
+
   const details = document.createElement('dialog');
   details.className = 'details-dialog';
   details.innerHTML = `
     <button class="dialog-close" type="button" aria-label="Fechar">×</button>
     <p class="eyebrow">${escapeHtml(ticket.id)} · ${escapeHtml(ticket.type)}</p>
     <h2>${escapeHtml(ticket.title)}</h2>
-    <p>${escapeHtml(ticket.description)}</p>
     <dl class="details-list">
       <div><dt>Status</dt><dd>${escapeHtml(statusLabel.get(ticket.status) ?? ticket.status ?? '—')}</dd></div>
       <div><dt>Prioridade</dt><dd>${escapeHtml(ticket.priority ?? '—')}</dd></div>
       <div><dt>Fase</dt><dd>${escapeHtml(ticket.phase ?? '—')}</dd></div>
       <div><dt>Labels</dt><dd>${ticket.labels.length ? ticket.labels.map(label => `<span class="label">${escapeHtml(label)}</span>`).join(' ') : '—'}</dd></div>
-      <div><dt>Depende de</dt><dd>${ticket.dependsOn.length ? ticket.dependsOn.map(id => escapeHtml(id)).join(', ') : 'Nenhuma dependência'}</dd></div>
+      <div><dt>Depende de</dt><dd>${entityLinks(entities, ticket.dependsOn, 'Nenhuma dependência')}</dd></div>
+      <div><dt>Dependentes</dt><dd>${entityLinks(entities, dependents, 'Nenhum dependente')}</dd></div>
+      <div class="acceptance" hidden><dt>Critérios de aceite</dt><dd></dd></div>
       <div><dt>Fonte</dt><dd><code>${escapeHtml(ticket.source || 'índice')}</code></dd></div>
     </dl>
+    <article class="ticket-body" aria-live="polite"><p class="muted">Carregando conteúdo…</p></article>
   `;
   details.querySelector('.dialog-close').addEventListener('click', () => details.close());
+  details.querySelectorAll('[data-entity]').forEach(link => {
+    link.addEventListener('click', () => showDetails(entities, link.dataset.entity));
+  });
   details.addEventListener('close', () => details.remove());
   document.body.append(details);
   details.showModal();
+
+  const body = details.querySelector('.ticket-body');
+  loadBody(ticket).then(source => {
+    if (source === null) {
+      body.innerHTML = `<p class="muted">${escapeHtml(ticket.description) || 'Sem conteúdo.'}</p>`;
+      return;
+    }
+    const progress = acceptanceProgress(source);
+    if (progress) {
+      const acceptance = details.querySelector('.acceptance');
+      acceptance.hidden = false;
+      acceptance.querySelector('dd').textContent = progress.total
+        ? `${progress.done}/${progress.total} concluídos`
+        : 'Seção sem checklist';
+    }
+    body.innerHTML = renderMarkdown(source) || '<p class="muted">Sem conteúdo.</p>';
+  }).catch(error => {
+    body.innerHTML = `<p class="muted">${escapeHtml(error.message)}</p><p>${escapeHtml(ticket.description)}</p>`;
+  });
 }
 
 Promise.all([loadData(), loadBranch()]).then(([data, branch]) => render(data, branch)).catch(error => {

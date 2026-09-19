@@ -1,0 +1,10 @@
+{
+  "sources": [
+    "initiatives",
+    "tickets",
+    "specs",
+    "decisions",
+    "cycles"
+  ],
+  "index": "index.json"
+}

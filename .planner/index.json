@@ -1,0 +1,165 @@
+{
+  "repository": {
+    "name": "planner",
+    "initiative": "Planner local — do M0 à edição segura"
+  },
+  "summary": {
+    "total": 9,
+    "draft": 0,
+    "planned": 4,
+    "inProgress": 1,
+    "blocked": 0,
+    "done": 4,
+    "canceled": 0
+  },
+  "tickets": [
+    {
+      "id": "PLN-001",
+      "type": "initiative",
+      "title": "Planner local — do M0 à edição segura",
+      "description": "Validar o fluxo local do Planner com uma fixture real e evoluir da leitura (M0) para a edição segura (M1), mantendo os arquivos Markdown como fonte de verdade.",
+      "status": "in_progress",
+      "priority": "high",
+      "phase": "M1",
+      "labels": [
+        "roadmap"
+      ],
+      "dependsOn": [],
+      "source": ".planner/initiatives/PLN-001-mvp-local.md"
+    },
+    {
+      "id": "PLN-002",
+      "type": "task",
+      "title": "Versionar fixture .planner para demonstração manual",
+      "description": "Ter um diretório `.planner/` versionado que exercite a UI, a CLI e o MCP com dados reais.",
+      "status": "done",
+      "priority": "high",
+      "phase": "M0",
+      "labels": [
+        "fixture",
+        "docs"
+      ],
+      "dependsOn": [
+        "PLN-001"
+      ],
+      "source": ".planner/tickets/PLN-002-fixture-versionada.md"
+    },
+    {
+      "id": "PLN-003",
+      "type": "task",
+      "title": "Renderizar corpo e critérios de aceite na UI",
+      "description": "Mostrar no detalhe do ticket o corpo Markdown completo e o progresso dos critérios de aceite.",
+      "status": "done",
+      "priority": "high",
+      "phase": "M0",
+      "labels": [
+        "ui"
+      ],
+      "dependsOn": [
+        "PLN-002"
+      ],
+      "source": ".planner/tickets/PLN-003-corpo-na-ui.md"
+    },
+    {
+      "id": "PLN-004",
+      "type": "task",
+      "title": "Navegar por dependências e dependentes na UI",
+      "description": "Permitir ir de um ticket para as dependências e os dependentes dele sem sair do detalhe.",
+      "status": "done",
+      "priority": "medium",
+      "phase": "M0",
+      "labels": [
+        "ui"
+      ],
+      "dependsOn": [
+        "PLN-002"
+      ],
+      "source": ".planner/tickets/PLN-004-dependentes-na-ui.md"
+    },
+    {
+      "id": "PLN-005",
+      "type": "task",
+      "title": "Alterar status, prioridade e labels com diff revisável",
+      "description": "Oferecer um comando que altera campos do frontmatter preservando o restante do arquivo e mostra o diff antes de gravar.",
+      "status": "planned",
+      "priority": "high",
+      "phase": "M1",
+      "labels": [
+        "cli",
+        "escrita"
+      ],
+      "dependsOn": [
+        "PLN-001"
+      ],
+      "source": ".planner/tickets/PLN-005-edicao-de-campos.md"
+    },
+    {
+      "id": "PLN-006",
+      "type": "task",
+      "title": "Criar ticket a partir de template",
+      "description": "Criar tickets com frontmatter válido, próximo id livre e seções padrão.",
+      "status": "planned",
+      "priority": "medium",
+      "phase": "M1",
+      "labels": [
+        "cli",
+        "escrita"
+      ],
+      "dependsOn": [
+        "PLN-001"
+      ],
+      "source": ".planner/tickets/PLN-006-ticket-por-template.md"
+    },
+    {
+      "id": "PLN-007",
+      "type": "task",
+      "title": "Validar transições de status antes de salvar",
+      "description": "Impedir transições incoerentes, como concluir um ticket com dependências abertas.",
+      "status": "planned",
+      "priority": "medium",
+      "phase": "M1",
+      "labels": [
+        "dominio",
+        "escrita"
+      ],
+      "dependsOn": [
+        "PLN-005"
+      ],
+      "source": ".planner/tickets/PLN-007-validar-transicoes.md"
+    },
+    {
+      "id": "PLN-008",
+      "type": "task",
+      "title": "Atualizar o índice após escrita autorizada",
+      "description": "Regenerar `.planner/index.json` na mesma operação que grava uma entidade.",
+      "status": "planned",
+      "priority": "medium",
+      "phase": "M1",
+      "labels": [
+        "indice",
+        "escrita"
+      ],
+      "dependsOn": [
+        "PLN-005",
+        "PLN-006"
+      ],
+      "source": ".planner/tickets/PLN-008-indice-apos-escrita.md"
+    },
+    {
+      "id": "PLN-009",
+      "type": "decision",
+      "title": "O .planner do próprio repositório é a fixture oficial",
+      "description": "O PRD deixava em aberto qual fixture valida a experiência completa. Os testes automatizados já geram fixtures temporárias próprias e não dependem de dados versionados.",
+      "status": "done",
+      "priority": "medium",
+      "phase": "M0",
+      "labels": [
+        "fixture"
+      ],
+      "dependsOn": [
+        "PLN-002"
+      ],
+      "source": ".planner/decisions/PLN-009-fixture-oficial.md"
+    }
+  ]
+}

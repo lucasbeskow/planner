@@ -150,8 +150,10 @@ ela, usa-se a primeira iniciativa encontrada. O nome do repositório vem de
 
 ## 3. Estado atual
 
-O repositório entrega o runtime reutilizável `planner`. Ele ainda não inclui uma
-instância `.planner/` própria: os testes criam fixtures temporárias.
+O repositório entrega o runtime reutilizável `planner` e versiona uma instância `.planner/`
+própria, que planeja o próprio Planner e serve de fixture para demonstração manual. Os testes
+automatizados criam fixtures temporárias e verificam apenas que a instância versionada é válida
+e que o índice dela está atualizado.
 
 ### Arquitetura
 
@@ -173,6 +175,7 @@ arquivos Markdown em .planner/
 - `mcp.js` adapta o mesmo domínio ao protocolo MCP por stdio;
 - `serve.js` serve a UI e os arquivos mínimos necessários para a leitura local;
 - `app.js` renderiza a projeção, o branch atual e o painel de detalhes no navegador;
+- `markdown.mjs` renderiza o corpo Markdown do detalhe, sem dependências, escapando HTML;
 - `tests/planner.node.js` verifica os contratos observáveis.
 
 ### Requisitos funcionais
@@ -203,14 +206,15 @@ Campos do domínio: `id`, `type`, `title`, `status`, `priority`, `phase`, `label
 #### RF04 — Consulta de detalhes
 
 `planner show <id>` e `planner_show` retornam metadados, corpo Markdown, descrição resumida e
-caminho do arquivo fonte. A UI abre um painel com metadados, labels, dependências e fonte; o
-corpo completo fica disponível pela CLI e pelo MCP.
+caminho do arquivo fonte. A UI abre um painel com metadados, labels, dependências, dependentes
+e fonte, e renderiza o corpo buscando o Markdown de origem. Quando há seção `Critérios de aceite`,
+o painel mostra quantos itens do checklist estão concluídos. O corpo não entra no índice.
 
 #### RF05 — Relações
 
 `planner context <id>` e `planner_context` retornam a entidade, suas dependências, seus
-dependentes e as validações relacionadas. A UI exibe os ids das dependências, mas não exibe
-dependentes nem um grafo navegável.
+dependentes e as validações relacionadas. A UI lista dependências e dependentes como links que
+abrem o detalhe da entidade; ids ausentes do índice aparecem destacados. Não há grafo visual.
 
 #### RF06 — Fonte de verdade
 
@@ -243,7 +247,7 @@ CLI e MCP retornam contratos equivalentes:
 3. `npx planner-serve` disponibiliza a UI em `http://localhost:4400/planner/`.
 4. A UI mostra repositório, branch atual, iniciativa, contadores e tickets agrupados por status.
 5. Ao abrir um ticket, o usuário vê título, tipo, status, prioridade, fase, labels,
-   dependências e arquivo fonte.
+   dependências, dependentes, progresso dos critérios de aceite, corpo e arquivo fonte.
 6. Pela CLI ou MCP, o usuário obtém o corpo completo, dependências, dependentes e validações.
 7. `planner validate` aponta ids duplicados, campos ausentes, referências quebradas e ciclos.
 8. Depois de editar os Markdown, `planner index` reproduz a projeção sem intervenção manual.
@@ -259,10 +263,10 @@ CLI e MCP retornam contratos equivalentes:
 - [x] ids duplicados, dependências ausentes e ciclos são reportados;
 - [x] o MCP não expõe escrita, execução de shell ou regeneração do índice;
 - [x] o servidor HTTP rejeita métodos não suportados e tentativas de escapar do diretório;
-- [ ] fixture `.planner/` versionada para demonstração manual;
-- [ ] corpo Markdown e critérios de aceite renderizados na UI;
-- [ ] navegação por dependentes ou grafo de relações na UI;
-- [ ] teste de integração do servidor HTTP passando em ambientes que permitem bind local.
+- [x] fixture `.planner/` versionada para demonstração manual;
+- [x] corpo Markdown e critérios de aceite renderizados na UI;
+- [x] navegação por dependentes ou grafo de relações na UI;
+- [x] teste de integração do servidor HTTP passando em ambientes que permitem bind local.
 
 ### Como validar
 
@@ -275,7 +279,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 34 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 36 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -308,8 +312,7 @@ Este contrato ainda é de processo: o runtime não valida nem projeta esses camp
 
 ### M2 — contexto de engenharia
 
-- renderizar corpo e critérios de aceite na UI;
-- mostrar dependentes e grafo de dependências;
+- mostrar grafo visual de dependências;
 - listar especificações e decisões recentes na UI;
 - validar links, critérios de aceite e referências externas;
 - apontar tickets sem critérios de aceite;
@@ -354,7 +357,6 @@ Ainda não há instrumentação no produto. Quando houver uso real, acompanhar:
 - Como normalizar tokens quando harnesses reportam métricas incompatíveis?
 - Quais campos de execução entram no índice e quais ficam apenas no detalhe?
 - Como representar tickets concluídos antes da adoção do contrato de evidências?
-- Qual fixture oficial valida a experiência completa?
 
 ## 9. Referências
 

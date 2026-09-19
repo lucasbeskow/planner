@@ -510,3 +510,54 @@ test('CLI e MCP retornam o mesmo contrato de domínio', () => {
 
   assert.deepEqual(mcpStatus, cliStatus);
 });
+
+test('renderiza Markdown do detalhe escapando HTML', async () => {
+  const { acceptanceProgress, renderMarkdown } = await import('../markdown.mjs');
+  const source = `---
+id: FIX-010
+---
+
+## Objetivo
+
+Texto com **negrito**, \`código <b>\` e [link](https://exemplo.com).
+
+<script>alert(1)</script>
+
+[perigoso](javascript:alert(1))
+
+\`\`\`js
+const a = '<b>';
+\`\`\`
+
+## Critérios de aceite
+
+- [x] feito
+- [ ] pendente
+  continuação
+
+## Notas
+
+- [ ] fora dos critérios
+`;
+  const html = renderMarkdown(source);
+
+  assert.doesNotMatch(html, /id: FIX-010/);
+  assert.match(html, /<h2>Objetivo<\/h2>/);
+  assert.match(html, /<strong>negrito<\/strong>/);
+  assert.match(html, /<code>código &lt;b&gt;<\/code>/);
+  assert.match(html, /<a href="https:\/\/exemplo.com" target="_blank" rel="noreferrer">link<\/a>/);
+  assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
+  assert.doesNotMatch(html, /<script>|href="javascript/);
+  assert.match(html, /<pre><code class="language-js">const a = &#039;&lt;b&gt;&#039;;<\/code><\/pre>/);
+  assert.match(html, /<li class="task done"><input type="checkbox" disabled checked> feito<\/li>/);
+  assert.match(html, /<li class="task"><input type="checkbox" disabled> pendente continuação<\/li>/);
+  assert.deepEqual(acceptanceProgress(source), { done: 1, total: 2 });
+  assert.equal(acceptanceProgress('## Objetivo\n\nSem critérios.'), null);
+});
+
+test('a fixture versionada é válida e o índice está atualizado', () => {
+  const entities = readEntities(root);
+  assert.deepEqual(validate(entities), []);
+  const versioned = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
+  assert.deepEqual(versioned, buildIndex(root, entities));
+});
