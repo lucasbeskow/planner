@@ -166,8 +166,7 @@ test('o índice versionado é consistente', () => {
 });
 
 test('o índice versionado está atualizado com os arquivos Markdown', () => {
-  // Nome da pasta, branch e ordem de leitura dependem de onde o índice foi gerado;
-  // nenhum deles indica um índice desatualizado.
+  // O nome da pasta depende de onde o repositório foi clonado e não indica um índice desatualizado.
   const committed = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
   const generated = JSON.parse(JSON.stringify(buildIndex(root, readEntities(root))));
   const byId = index => new Map(index.tickets.map(ticket => [ticket.id, JSON.stringify(ticket)]));
@@ -180,6 +179,13 @@ test('o índice versionado está atualizado com os arquivos Markdown', () => {
   if (committed.repository.initiative !== generated.repository.initiative) stale.push('repository.initiative');
 
   assert.deepEqual(stale, [], `.planner/index.json está desatualizado (${stale.join(', ')}); rode yarn planner:index`);
+});
+
+test('o índice é determinístico e não depende do branch atual', () => {
+  const index = buildIndex(fixtureRoot, readEntities(fixtureRoot));
+
+  assert.deepEqual(index.tickets.map(ticket => ticket.id), ['FIX-001', 'FIX-002', 'FIX-003', 'FIX-004']);
+  assert.equal('branch' in index.repository, false);
 });
 
 test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
@@ -198,7 +204,6 @@ test('o índice contém os dados necessários para o dashboard', () => {
 
   assert.ok(index.repository.name);
   assert.ok(index.repository.initiative);
-  assert.ok(index.repository.branch);
   assert.deepEqual(Object.keys(index.summary), ['total', 'planned', 'inProgress', 'blocked', 'done']);
   assert.deepEqual(Object.keys(ticket).sort(), ['dependsOn', 'description', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type']);
 });

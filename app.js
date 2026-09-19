@@ -7,6 +7,16 @@ const STATUS = [
 
 const statusLabel = new Map(STATUS);
 
+async function loadBranch() {
+  try {
+    const response = await fetch('../.git/HEAD');
+    if (!response.ok) return null;
+    return (await response.text()).match(/^ref: refs\/heads\/(.+)$/m)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 async function loadData() {
   const response = await fetch('../.planner/index.json');
   if (!response.ok) {
@@ -24,7 +34,7 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
-function render(data) {
+function render(data, branch) {
   const tickets = data.tickets;
   const app = document.querySelector('#app');
   app.innerHTML = `
@@ -33,7 +43,7 @@ function render(data) {
         <div>
           <p class="eyebrow">${escapeHtml(data.repository.name)} / planner</p>
           <h1>${escapeHtml(data.repository.initiative)}</h1>
-          <p class="muted">Branch atual: <code>${escapeHtml(data.repository.branch)}</code></p>
+          ${branch ? `<p class="muted">Branch atual: <code>${escapeHtml(branch)}</code></p>` : ''}
         </div>
         <span class="local-badge">LOCAL · GIT-NATIVE</span>
       </header>
@@ -118,6 +128,6 @@ function showDetails(ticket) {
   details.showModal();
 }
 
-loadData().then(render).catch(error => {
+Promise.all([loadData(), loadBranch()]).then(([data, branch]) => render(data, branch)).catch(error => {
   document.querySelector('#app').innerHTML = `<main class="error"><h1>Planner indisponível</h1><p>${escapeHtml(error.message)}</p><p>Sirva o diretório do repositório por HTTP para carregar o índice local.</p></main>`;
 });

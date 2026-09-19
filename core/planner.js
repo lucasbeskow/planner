@@ -1,6 +1,5 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { execFileSync } = require('node:child_process');
 
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
 
@@ -67,7 +66,7 @@ function readEntities(root) {
     return fs.readdirSync(directory).filter(file => file.endsWith('.md')).map(file => path.join(directory, file));
   });
 
-  return files.map(filePath => {
+  const entities = files.map(filePath => {
     const parsed = parseFrontmatter(fs.readFileSync(filePath, 'utf8'), path.relative(root, filePath));
     return {
       ...parsed.attributes,
@@ -76,6 +75,10 @@ function readEntities(root) {
       filePath: path.relative(root, filePath)
     };
   });
+
+  // A ordem de readdirSync varia entre sistemas de arquivos; ordenar mantém o índice determinístico.
+  const sortKey = entity => String(entity.id ?? entity.filePath);
+  return entities.sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0));
 }
 
 function validate(entities) {
@@ -145,16 +148,9 @@ function summary(entities) {
 }
 
 function buildIndex(root, entities) {
-  let branch = 'unknown';
-  try {
-    branch = execFileSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || branch;
-  } catch {
-    // O Planner também pode ler uma cópia exportada sem uma pasta .git.
-  }
-
+  // O branch não entra na projeção versionada: ele mudaria o arquivo conforme o branch que o gerou.
   const repository = {
     name: path.basename(root),
-    branch,
     initiative: 'Planner local de engenharia'
   };
   return {
