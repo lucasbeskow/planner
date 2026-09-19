@@ -83,7 +83,10 @@ O usuário executa uma única interface local e encontra:
 - apontar tickets sem critérios de aceite;
 - relacionar ticket, commit e PR;
 - gerar checklist de execução;
-- oferecer contexto estruturado para agentes.
+- oferecer contexto estruturado para agentes;
+- disponibilizar uma CLI semântica;
+- expor MCP local somente leitura;
+- distribuir skills de workflow para Codex e Claude Code.
 
 ### M3 — integrações opcionais
 
@@ -110,4 +113,3 @@ O usuário executa uma única interface local e encontra:
 - sincronização bidirecional com Linear;
 - editor WYSIWYG;
 - execução arbitrária de comandos pela UI.
-
