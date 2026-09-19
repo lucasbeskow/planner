@@ -180,3 +180,13 @@ test('o servidor MCP expõe ferramentas somente leitura', () => {
   assert.equal(JSON.parse(mcp.responses[2].result.content[0].text).total, 10);
   assert.equal(JSON.parse(mcp.responses[3].result.content[0].text).entity.id, 'PLN-009');
 });
+
+test('CLI e MCP retornam o mesmo contrato de domínio', () => {
+  const cliStatus = JSON.parse(runCli('status', '--json').stdout);
+  const mcp = runMcp([
+    { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'planner_status', arguments: {} } }
+  ]);
+  const mcpStatus = JSON.parse(mcp.responses[0].result.content[0].text);
+
+  assert.deepEqual(mcpStatus, cliStatus);
+});
