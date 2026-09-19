@@ -175,6 +175,7 @@ arquivos Markdown em .planner/
 
 - `core/planner.js` concentra parser, leitura, resumo, projeção, contexto e validação;
 - `core/transitions.js` declara as transições de status permitidas;
+- `core/git.js` lê o histórico local com `git log`, sem shell e sem rede;
 - `core/references.js` extrai links, menções a ids e URLs externas do corpo, sem rede;
 - `core/create.js` gera novos tickets a partir de template, com o próximo id livre;
 - `core/edit.js` calcula edições de frontmatter como diff e grava somente um plano revisado;
@@ -222,7 +223,10 @@ o painel mostra quantos itens do checklist estão concluídos. O corpo não entr
 #### RF05 — Relações
 
 `planner context <id>` e `planner_context` retornam a entidade, suas dependências, seus
-dependentes e as validações relacionadas. A UI lista dependências e dependentes como links que
+dependentes, as validações relacionadas e `commits`: os commits do histórico Git local que citam
+o id no assunto ou no corpo (com hash, autor, data, assunto e números de pull request lidos do
+assunto, como `(#12)` ou `Merge pull request #12`). Nada é consultado na rede; sem Git,
+`commits` é `null`. Para que a relação funcione, as mensagens de commit devem citar o id. A UI lista dependências e dependentes como links que
 abrem o detalhe da entidade; ids ausentes do índice aparecem destacados. Não há grafo visual.
 
 #### RF06 — Fonte de verdade
@@ -345,7 +349,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 53 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 54 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -383,7 +387,6 @@ mostra no detalhe; `validation` e limitações ficam só no Markdown.
 ### M2 — contexto de engenharia
 
 - mostrar grafo visual de dependências;
-- relacionar ticket, commit e pull request;
 
 ### M3 — integrações opcionais
 

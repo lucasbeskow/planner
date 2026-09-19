@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { commitsFor } = require('./git');
 const { entityReferences, idPrefixes, referenceWarnings } = require('./references');
 
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
@@ -358,7 +359,8 @@ function writeIndex(root, entities = readEntities(root)) {
   return index;
 }
 
-function contextFor(entities, id) {
+// Com `root`, o contexto inclui os commits locais que citam o id (null sem Git).
+function contextFor(entities, id, root) {
   const entity = entities.find(item => item.id === id);
   if (!entity) return null;
   const dependsOn = item => (Array.isArray(item.dependsOn) ? item.dependsOn : []);
@@ -367,7 +369,8 @@ function contextFor(entities, id) {
     dependencies: dependsOn(entity).map(dependency => entities.find(item => item.id === dependency)).filter(Boolean),
     dependents: entities.filter(item => dependsOn(item).includes(id)),
     validation: validationIssues(entities).filter(issue => issue.ids.includes(id)).map(issue => issue.message),
-    warnings: entityWarnings(entity)
+    warnings: entityWarnings(entity),
+    ...(root ? { commits: commitsFor(root, id) } : {})
   };
 }
 

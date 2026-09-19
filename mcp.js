@@ -33,7 +33,7 @@ const tools = [
   },
   {
     name: 'planner_context',
-    description: 'Retorna a entidade, suas dependências, dependentes e validações relacionadas.',
+    description: 'Retorna a entidade, suas dependências, dependentes, validações e commits locais que citam o id.',
     inputSchema: {
       type: 'object',
       properties: { id: { type: 'string', description: 'Identificador da entidade.' } },
@@ -69,7 +69,7 @@ function callTool(name, argumentsValue = {}) {
       return result(entity);
     }
     case 'planner_context': {
-      const context = contextFor(entities, argumentsValue.id);
+      const context = contextFor(entities, argumentsValue.id, root);
       if (!context) return errorResult(`Entidade não encontrada: ${argumentsValue.id || '(sem id)'}`);
       return result(context);
     }

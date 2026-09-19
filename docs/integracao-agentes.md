@@ -13,7 +13,7 @@ Claude Code e outros clientes não precisam manter integrações específicas de
 | Resumo | `npx planner status --json` | `planner_status` |
 | Listagem | `npx planner list [status] --json` | `planner_list` |
 | Detalhe | `npx planner show <id> --json` | `planner_show` |
-| Contexto | `npx planner context <id> --json` | `planner_context` |
+| Contexto (inclui commits locais que citam o id) | `npx planner context <id> --json` | `planner_context` |
 | Validação | `npx planner validate --json` | `planner_validate` |
 
 Os comandos e ferramentas carregam os Markdown atuais. `.planner/index.json` é somente uma

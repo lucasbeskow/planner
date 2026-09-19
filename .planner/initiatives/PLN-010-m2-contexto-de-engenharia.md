@@ -22,5 +22,5 @@ código entregue.
 - [x] especificações e decisões aparecem na UI
 - [x] links e referências externas são validados
 - [x] evidências de execução são registradas e projetadas
-- [ ] tickets se relacionam com commits e pull requests
+- [x] tickets se relacionam com commits e pull requests
 - [ ] dependências podem ser vistas como grafo

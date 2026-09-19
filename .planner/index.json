@@ -6,10 +6,10 @@
   "summary": {
     "total": 17,
     "draft": 0,
-    "planned": 3,
+    "planned": 2,
     "inProgress": 1,
     "blocked": 0,
-    "done": 13,
+    "done": 14,
     "canceled": 0
   },
   "tickets": [
@@ -273,7 +273,7 @@
       ],
       "dependsOn": [],
       "acceptance": {
-        "done": 4,
+        "done": 5,
         "total": 6
       },
       "evidence": null,
@@ -398,7 +398,7 @@
       "type": "task",
       "title": "Relacionar ticket, commit e pull request",
       "description": "Ligar cada ticket aos commits e pull requests que o implementam, usando apenas o Git local.",
-      "status": "planned",
+      "status": "done",
       "priority": "medium",
       "phase": "M2",
       "labels": [
@@ -408,10 +408,16 @@
         "PLN-010"
       ],
       "acceptance": {
-        "done": 0,
+        "done": 2,
         "total": 2
       },
-      "evidence": null,
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-015-relacionar-ticket-commit-e-pull-request.md"
     },

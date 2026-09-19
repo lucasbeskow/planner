@@ -1060,3 +1060,35 @@ test('evidência de execução é lida, validada e projetada', () => {
     fs.rmSync(evidenceRoot, { recursive: true, force: true });
   }
 });
+
+test('context relaciona commits locais e pull requests citados', () => {
+  const gitRoot = createFixture();
+  const git = (...args) => {
+    const result = spawnSync('git', ['-c', 'user.name=Teste', '-c', 'user.email=teste@example.com', '-c', 'commit.gpgsign=false', ...args], { cwd: gitRoot, encoding: 'utf8' });
+    assert.equal(result.status, 0, result.stderr);
+  };
+  try {
+    const noGit = JSON.parse(runCliIn(gitRoot, 'context', 'FIX-002', '--json').stdout);
+    assert.equal(noGit.commits, null);
+
+    git('init', '-q');
+    git('commit', '-q', '--allow-empty', '-m', 'feat: implementa exportação (FIX-002) (#12)');
+    git('commit', '-q', '--allow-empty', '-m', 'Merge pull request #34 from time/ramo', '-m', 'Fecha FIX-002.');
+    git('commit', '-q', '--allow-empty', '-m', 'chore: ajusta FIX-0020 e FIX-002x');
+    git('commit', '-q', '--allow-empty', '-m', 'docs: sem relação');
+
+    const context = JSON.parse(runCliIn(gitRoot, 'context', 'FIX-002', '--json').stdout);
+    assert.deepEqual(context.commits.map(commit => [commit.subject, commit.pullRequests]), [
+      ['Merge pull request #34 from time/ramo', [34]],
+      ['feat: implementa exportação (FIX-002) (#12)', [12]]
+    ]);
+    assert.match(context.commits[0].hash, /^[0-9a-f]{40}$/);
+    assert.equal(context.commits[0].shortHash, context.commits[0].hash.slice(0, 7));
+    assert.equal(context.commits[0].author, 'Teste');
+
+    const mcp = runMcp([{ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'planner_context', arguments: { id: 'FIX-002' } } }], gitRoot);
+    assert.deepEqual(JSON.parse(mcp.responses[0].result.content[0].text).commits, context.commits);
+  } finally {
+    fs.rmSync(gitRoot, { recursive: true, force: true });
+  }
+});

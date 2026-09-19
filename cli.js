@@ -144,7 +144,7 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
       }
       case 'context': {
         if (!argument) throw new Error('informe o id da entidade para context');
-        const context = contextFor(entities, argument);
+        const context = contextFor(entities, argument, root);
         if (!context) throw new Error(`Entidade não encontrada: ${argument}`);
         output(flags.has('--json') ? context : JSON.stringify(context, null, 2));
         break;
