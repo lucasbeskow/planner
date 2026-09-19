@@ -198,7 +198,9 @@ ascendente por um repositório.
 O índice contém nome do repositório, iniciativa, resumo por status e entidades projetadas com
 descrição resumida, labels, prioridade, fase, dependências e caminho do arquivo fonte. A UI
 mostra contadores, iniciativas e tickets agrupados por status, omitindo colunas opcionais sem
-itens.
+itens. Especificações e decisões ficam fora do quadro, em uma seção própria ordenada da mais
+recente para a mais antiga (maior número de id primeiro, já que não há data no frontmatter);
+cada item abre o mesmo painel de detalhe.
 
 #### RF03 — Entidades e formato
 
@@ -369,7 +371,6 @@ Este contrato ainda é de processo: o runtime não valida nem projeta esses camp
 ### M2 — contexto de engenharia
 
 - mostrar grafo visual de dependências;
-- listar especificações e decisões recentes na UI;
 - validar links e referências externas;
 - relacionar ticket, commit e pull request;
 - registrar e projetar evidências de execução.

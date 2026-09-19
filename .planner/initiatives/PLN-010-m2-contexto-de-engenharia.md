@@ -19,7 +19,7 @@ código entregue.
 ## Critérios de aceite
 
 - [x] tickets sem critérios de aceite são apontados
-- [ ] especificações e decisões aparecem na UI
+- [x] especificações e decisões aparecem na UI
 - [ ] links e referências externas são validados
 - [ ] evidências de execução são registradas e projetadas
 - [ ] tickets se relacionam com commits e pull requests

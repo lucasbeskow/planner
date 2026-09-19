@@ -11,6 +11,13 @@ const STATUS = [
 ];
 
 const statusLabel = new Map(STATUS.map(([key, label]) => [key, label]));
+const DOCUMENT_TYPES = new Map([['spec', 'Especificação'], ['decision', 'Decisão']]);
+
+// Sem data no frontmatter, o número do id indica a ordem de criação: maior id, mais recente.
+function byRecency(a, b) {
+  const number = entity => Number(String(entity.id).match(/(\d+)$/)?.[1] ?? -1);
+  return number(b) - number(a) || String(b.id).localeCompare(String(a.id));
+}
 
 async function loadBranch() {
   try {
@@ -33,7 +40,8 @@ async function loadData() {
 function render(data, branch) {
   const entities = data.tickets;
   const initiatives = entities.filter(entity => entity.type === 'initiative');
-  const tickets = entities.filter(entity => entity.type !== 'initiative');
+  const documents = entities.filter(entity => DOCUMENT_TYPES.has(entity.type)).sort(byRecency);
+  const tickets = entities.filter(entity => entity.type !== 'initiative' && !DOCUMENT_TYPES.has(entity.type));
   const byStatus = key => tickets.filter(ticket => ticket.status === key);
   const statuses = STATUS.filter(([key, , options]) => !options?.optional || byStatus(key).length);
   const app = document.querySelector('#app');
@@ -65,6 +73,21 @@ function render(data, branch) {
               <button class="initiative" type="button" data-ticket="${escapeHtml(initiative.id)}">
                 <span class="ticket-id">${escapeHtml(initiative.id)} · ${escapeHtml(statusLabel.get(initiative.status) ?? initiative.status ?? '')}</span>
                 <strong>${escapeHtml(initiative.title)}</strong>
+              </button>
+            `).join('')}
+          </div>
+        </section>
+      ` : ''}
+
+      ${documents.length ? `
+        <section class="documents" aria-labelledby="documents-heading">
+          <h2 id="documents-heading">Especificações e decisões</h2>
+          <div class="initiative-list">
+            ${documents.map(item => `
+              <button class="initiative" type="button" data-ticket="${escapeHtml(item.id)}">
+                <span class="ticket-id">${escapeHtml(item.id)} · ${DOCUMENT_TYPES.get(item.type)} · ${escapeHtml(statusLabel.get(item.status) ?? item.status ?? '')}</span>
+                <strong>${escapeHtml(item.title)}</strong>
+                <span class="ticket-description">${escapeHtml(item.description)}</span>
               </button>
             `).join('')}
           </div>
