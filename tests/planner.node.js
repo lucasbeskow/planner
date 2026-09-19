@@ -942,3 +942,64 @@ test('validate avisa sobre tasks sem critérios de aceite sem invalidar o plano'
     fs.rmSync(warnRoot, { recursive: true, force: true });
   }
 });
+
+test('valida links e menções sem acessar a rede', () => {
+  const refRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-refs-'));
+  const write = (file, content) => {
+    const filePath = path.join(refRoot, file);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, content);
+  };
+  try {
+    write('docs/guia.md', '# Guia');
+    write('.planner/tickets/REF-001.md', `---
+id: REF-001
+type: task
+title: Referências
+status: planned
+depends_on: []
+---
+
+## Objetivo
+
+Ver [guia](../../docs/guia.md#topo), [raiz](/docs/guia.md), [quebrado](../../docs/nada.md) e
+[âncora](#objetivo). Depende de REF-002 e de REF-404, não de UTF-8.
+Fonte: [RFC](https://www.rfc-editor.org/rfc/rfc9110) e <https://exemplo.com/a>, também https://exemplo.com/b.
+
+\`[código](nao-existe.md) REF-777\`
+
+\`\`\`
+[bloco](tambem-nao.md) REF-888
+\`\`\`
+
+## Critérios de aceite
+
+- [ ] algo
+`);
+    write('.planner/tickets/REF-002.md', '---\nid: REF-002\ntype: task\ntitle: Alvo\nstatus: draft\ndepends_on: []\n---\n');
+
+    const context = JSON.parse(runCliIn(refRoot, 'context', 'REF-001', '--json').stdout);
+    assert.deepEqual(context.entity.references, {
+      files: [
+        { href: '../../docs/guia.md#topo', path: 'docs/guia.md', exists: true },
+        { href: '/docs/guia.md', path: 'docs/guia.md', exists: true },
+        { href: '../../docs/nada.md', path: 'docs/nada.md', exists: false }
+      ],
+      entities: [{ id: 'REF-002', exists: true }, { id: 'REF-404', exists: false }],
+      external: ['https://exemplo.com/a', 'https://exemplo.com/b', 'https://www.rfc-editor.org/rfc/rfc9110']
+    });
+    assert.deepEqual(context.warnings, [
+      'link para arquivo inexistente: ../../docs/nada.md',
+      'menção a entidade inexistente: REF-404'
+    ]);
+
+    const validation = runCliIn(refRoot, 'validate', '--json');
+    assert.equal(validation.status, 0);
+    assert.deepEqual(JSON.parse(validation.stdout).warnings, [
+      'REF-001: link para arquivo inexistente: ../../docs/nada.md',
+      'REF-001: menção a entidade inexistente: REF-404'
+    ]);
+  } finally {
+    fs.rmSync(refRoot, { recursive: true, force: true });
+  }
+});

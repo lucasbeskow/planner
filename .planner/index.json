@@ -6,10 +6,10 @@
   "summary": {
     "total": 16,
     "draft": 0,
-    "planned": 6,
+    "planned": 4,
     "inProgress": 1,
     "blocked": 0,
-    "done": 9,
+    "done": 11,
     "canceled": 0
   },
   "tickets": [
@@ -216,7 +216,7 @@
       ],
       "dependsOn": [],
       "acceptance": {
-        "done": 1,
+        "done": 3,
         "total": 6
       },
       "warnings": [],
@@ -248,7 +248,7 @@
       "type": "task",
       "title": "Listar especificações e decisões na UI",
       "description": "Tornar especificações e decisões recentes visíveis na UI, fora do quadro de tickets.",
-      "status": "planned",
+      "status": "done",
       "priority": "medium",
       "phase": "M2",
       "labels": [
@@ -258,7 +258,7 @@
         "PLN-010"
       ],
       "acceptance": {
-        "done": 0,
+        "done": 2,
         "total": 2
       },
       "warnings": [],
@@ -269,7 +269,7 @@
       "type": "task",
       "title": "Validar links e referências externas",
       "description": "Detectar links quebrados nos corpos das entidades sem depender de rede.",
-      "status": "planned",
+      "status": "done",
       "priority": "medium",
       "phase": "M2",
       "labels": [
@@ -279,7 +279,7 @@
         "PLN-010"
       ],
       "acceptance": {
-        "done": 0,
+        "done": 3,
         "total": 3
       },
       "warnings": [],

@@ -175,6 +175,7 @@ arquivos Markdown em .planner/
 
 - `core/planner.js` concentra parser, leitura, resumo, projeção, contexto e validação;
 - `core/transitions.js` declara as transições de status permitidas;
+- `core/references.js` extrai links, menções a ids e URLs externas do corpo, sem rede;
 - `core/create.js` gera novos tickets a partir de template, com o próximo id livre;
 - `core/edit.js` calcula edições de frontmatter como diff e grava somente um plano revisado;
 - `cli.js` oferece consulta, inicialização, edição de campos e regeneração do índice;
@@ -238,6 +239,13 @@ Também emitem avisos, que não tornam o plano inválido nem mudam o código de 
 `draft` e `canceled` sem seção `Critérios de aceite` ou com a seção sem itens de checklist. O
 índice projeta, por entidade, `acceptance` (`done`/`total` do checklist, ou `null` sem seção) e
 `warnings`; a UI mostra o progresso nos cards e destaca tickets com aviso.
+
+Referências no corpo também geram avisos, sem acesso à rede: links Markdown para arquivos
+inexistentes (resolvidos a partir do arquivo da entidade, ou da raiz quando começam com `/`) e
+menções a ids inexistentes. Só contam ids com prefixos em uso no plano, para que textos como
+`UTF-8` não virem referência. Trechos de código são ignorados. `planner context` e
+`planner_context` retornam `entity.references` (`files`, `entities` e `external`, com as URLs
+externas apenas listadas) e os avisos da entidade.
 
 #### RF08 — Integração com agentes
 
@@ -337,7 +345,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 51 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 52 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -371,7 +379,6 @@ Este contrato ainda é de processo: o runtime não valida nem projeta esses camp
 ### M2 — contexto de engenharia
 
 - mostrar grafo visual de dependências;
-- validar links e referências externas;
 - relacionar ticket, commit e pull request;
 - registrar e projetar evidências de execução.
 

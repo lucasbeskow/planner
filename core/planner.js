@@ -1,5 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
+const { entityReferences, idPrefixes, referenceWarnings } = require('./references');
 
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
 const ALLOWED_TYPES = ['initiative', 'task', 'decision', 'spec', 'cycle'];
@@ -153,7 +154,13 @@ function readEntities(root) {
 
   // A ordem de readdirSync varia entre sistemas de arquivos; ordenar mantém o índice determinístico.
   const sortKey = entity => String(entity.id ?? entity.filePath);
-  return entities.sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0));
+  entities.sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0));
+
+  // Referências dependem do plano inteiro (ids e prefixos existentes), por isso vêm depois da leitura.
+  const ids = new Set(entities.map(entity => entity.id));
+  const prefixes = idPrefixes(entities);
+  for (const entity of entities) entity.references = entityReferences(root, entity, ids, prefixes);
+  return entities;
 }
 
 // Cada problema guarda os ids envolvidos, para que o contexto de uma entidade filtre por
@@ -223,11 +230,15 @@ function validate(entities) {
 
 // Avisos apontam lacunas de processo sem invalidar o plano. Só tasks em andamento ou
 // planejadas precisam de critérios; rascunhos e cancelados ficam de fora.
-function entityWarnings(entity) {
+function acceptanceWarnings(entity) {
   if (entity.type !== 'task' || ['draft', 'canceled'].includes(entity.status)) return [];
   if (!entity.acceptance) return ['sem seção Critérios de aceite'];
   if (!entity.acceptance.total) return ['Critérios de aceite sem itens de checklist'];
   return [];
+}
+
+function entityWarnings(entity) {
+  return [...acceptanceWarnings(entity), ...(entity.references ? referenceWarnings(entity.references) : [])];
 }
 
 function warnings(entities) {
@@ -315,7 +326,8 @@ function contextFor(entities, id) {
     entity,
     dependencies: dependsOn(entity).map(dependency => entities.find(item => item.id === dependency)).filter(Boolean),
     dependents: entities.filter(item => dependsOn(item).includes(id)),
-    validation: validationIssues(entities).filter(issue => issue.ids.includes(id)).map(issue => issue.message)
+    validation: validationIssues(entities).filter(issue => issue.ids.includes(id)).map(issue => issue.message),
+    warnings: entityWarnings(entity)
   };
 }
 
