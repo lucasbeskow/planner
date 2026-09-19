@@ -25,5 +25,5 @@ oficial do projeto: o próprio Planner é planejado com o Planner.
 - [x] fixture `.planner/` versionada para demonstração manual
 - [x] corpo Markdown e critérios de aceite renderizados na UI
 - [x] navegação por dependentes na UI
-- [ ] edição de status, prioridade e labels com diff revisável
+- [x] edição de status, prioridade e labels com diff revisável
 - [ ] criação de ticket a partir de template

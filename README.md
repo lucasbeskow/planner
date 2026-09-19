@@ -80,6 +80,16 @@ npx planner context PLN-009 --json
 npx planner validate --json
 ```
 
+Para alterar `status`, `priority` ou `labels` sem editar o arquivo à mão:
+
+```bash
+npx planner set PLN-005 status=in_progress priority=high labels+=ui
+npx planner set PLN-005 status=in_progress priority=high labels+=ui --yes
+```
+
+Sem `--yes`, o comando só mostra o diff. Com `--yes`, grava somente as linhas alteradas e
+preserva comentários, ordem das chaves e corpo. Depois de gravar, rode `npx planner index`.
+
 Para conectar um agente compatível com MCP, use o comando local por stdio:
 
 ```bash
@@ -139,5 +149,6 @@ na raiz para ver a UI com o planejamento do próprio Planner.
 
 ## Próximos passos
 
-As próximas evoluções do Planner são operações de edição segura, criação de tickets por
-template e integrações opcionais com serviços externos.
+As próximas evoluções do Planner são criação de tickets por template, validação de transições
+de status, atualização do índice na mesma operação de escrita e integrações opcionais com
+serviços externos. Os itens estão em `.planner/tickets/`.

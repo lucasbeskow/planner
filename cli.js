@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
+const { applyEdit, planEdit } = require('./core/edit');
 const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
 
 const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
@@ -9,7 +10,7 @@ const rawArguments = process.argv.slice(2);
 const isFlag = value => value.startsWith('-');
 const flags = new Set(rawArguments.filter(isFlag));
 const positional = rawArguments.filter(value => !isFlag(value));
-const [command = 'status', argument] = positional;
+const [command = 'status', argument, ...rest] = positional;
 
 const usage = `Uso: npx planner <comando> [argumento] [--json]
 
@@ -20,10 +21,16 @@ Comandos:
   show <id>              mostra uma entidade
   context <id>           mostra dependências e dependentes
   validate               valida entidades e dependências
+  set <id> <campo=valor>...
+                         mostra o diff de status, priority ou labels;
+                         grava somente com --yes
   index                  regenera o índice derivado
   help, -h, --help       mostra esta ajuda
 
---json retorna dados estruturados para agentes e scripts.`;
+Em set, labels aceita labels=a,b (substitui), labels+=a e labels-=a.
+
+--json retorna dados estruturados para agentes e scripts.
+--yes confirma a gravação dos comandos que alteram arquivos.`;
 
 function output(value) {
   if (flags.has('--json')) console.log(JSON.stringify(value, null, 2));
@@ -35,6 +42,23 @@ function indexCommand() {
   const index = buildIndex(root, entities);
   fs.writeFileSync(path.join(root, '.planner', 'index.json'), `${JSON.stringify(index, null, 2)}\n`);
   output(`Índice atualizado: ${entities.length} entidades`);
+}
+
+// Sem --yes, set só mostra o diff: nenhuma escrita acontece sem confirmação explícita.
+function setCommand() {
+  const plan = planEdit(root, argument, rest);
+  const write = flags.has('--yes') && plan.changes.length > 0;
+  if (write) applyEdit(root, plan);
+
+  if (flags.has('--json')) {
+    output({ id: plan.id, file: plan.file, changes: plan.changes, diff: plan.diff, written: write });
+  } else if (!plan.changes.length) {
+    output(`${plan.id}: nenhuma alteração; os valores já estão aplicados`);
+  } else {
+    output(`${plan.diff}\n\n${write
+      ? `Gravado em ${plan.file}. Rode npx planner index para atualizar a UI.`
+      : 'Nenhuma alteração gravada. Repita com --yes para gravar.'}`);
+  }
 }
 
 function initCommand() {
@@ -113,6 +137,9 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
         }
         break;
       }
+      case 'set':
+        setCommand();
+        break;
       case 'index':
         indexCommand();
         break;

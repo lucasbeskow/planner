@@ -32,6 +32,14 @@ O servidor não expõe criação, edição, execução de shell ou regeneração
 o plano, o agente deve editar os arquivos somente quando o usuário autorizar essa mudança,
 depois executar `npx planner validate` e `npx planner index`.
 
+Para status, prioridade e labels, prefira a CLI, que mostra o diff antes de gravar:
+
+```bash
+npx planner set PLN-005 status=in_progress labels+=ui   # só mostra o diff
+npx planner set PLN-005 status=in_progress labels+=ui --yes
+npx planner index
+```
+
 ## Skill de workflow
 
 A skill reutilizável está em `skills/planner-workflow/`. Ela documenta a sequência

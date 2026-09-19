@@ -87,9 +87,8 @@ ferramentas de revisão ou deploy.
 
 Fora do escopo do MVP:
 
-- editar entidades pela UI, CLI ou MCP;
-- impor transições de estado ou executar mudanças de status;
-- renderizar o Markdown completo e os critérios de aceite na UI;
+- editar entidades pela UI ou pelo MCP (a CLI edita campos com `planner set`, no M1);
+- impor transições de estado;
 - grafo visual de dependências;
 - sincronizar automaticamente com Linear, GitHub, GitLab ou outro SaaS;
 - editar código, fazer deploy ou executar comandos sem confirmação;
@@ -171,7 +170,8 @@ arquivos Markdown em .planner/
 ```
 
 - `core/planner.js` concentra parser, leitura, resumo, projeção, contexto e validação;
-- `cli.js` oferece consulta, inicialização e regeneração do índice;
+- `core/edit.js` calcula edições de frontmatter como diff e grava somente um plano revisado;
+- `cli.js` oferece consulta, inicialização, edição de campos e regeneração do índice;
 - `mcp.js` adapta o mesmo domínio ao protocolo MCP por stdio;
 - `serve.js` serve a UI e os arquivos mínimos necessários para a leitura local;
 - `app.js` renderiza a projeção, o branch atual e o painel de detalhes no navegador;
@@ -238,6 +238,24 @@ CLI e MCP retornam contratos equivalentes:
 | Contexto | `planner context <id> --json` | `planner_context` | Entidade, dependências, dependentes e validações |
 | Validação | `planner validate --json` | `planner_validate` | `valid`, erros e total de entidades |
 
+A escrita existe apenas na CLI (RF09); o MCP permanece somente leitura.
+
+#### RF09 — Edição de campos
+
+`planner set <id> <campo=valor>...` altera `status`, `priority` e `labels`. Sem `--yes`, o
+comando só mostra o diff unificado; com `--yes`, grava o mesmo diff. `labels` aceita `=`
+(substitui), `+=` e `-=`, com valores separados por vírgula.
+
+- Somente as linhas dos campos alterados mudam; comentários no fim da linha, ordem das chaves,
+  estilo da lista (bloco ou inline), indentação, finais de linha e corpo são preservados.
+- Campo ausente é inserido no fim do frontmatter.
+- Status fora da lista aceita, prioridade ou label que não sejam um token simples (letras,
+  números, `_` ou `-`), campos não editáveis e ids inexistentes são rejeitados antes da escrita.
+- A edição é recusada se introduzir um problema de validação novo ou se o arquivo mudar entre o
+  cálculo do diff e a gravação.
+- Alterações que não mudam valores não tocam o arquivo.
+- O índice não é regenerado automaticamente; isso fica para PLN-008.
+
 ## 4. Expectations — expectativas
 
 ### Experiência esperada
@@ -279,7 +297,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 36 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 42 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 

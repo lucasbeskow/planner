@@ -6,10 +6,10 @@
   "summary": {
     "total": 9,
     "draft": 0,
-    "planned": 4,
+    "planned": 3,
     "inProgress": 1,
     "blocked": 0,
-    "done": 4,
+    "done": 5,
     "canceled": 0
   },
   "tickets": [
@@ -81,7 +81,7 @@
       "type": "task",
       "title": "Alterar status, prioridade e labels com diff revisável",
       "description": "Oferecer um comando que altera campos do frontmatter preservando o restante do arquivo e mostra o diff antes de gravar.",
-      "status": "planned",
+      "status": "done",
       "priority": "high",
       "phase": "M1",
       "labels": [

@@ -6,6 +6,7 @@ const path = require('node:path');
 const test = require('node:test');
 const util = require('node:util');
 const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
+const { applyEdit, planEdit } = require('../core/edit');
 const { createPlannerServer } = require('../serve');
 
 const root = path.resolve(__dirname, '..');
@@ -560,4 +561,126 @@ test('a fixture versionada é válida e o índice está atualizado', () => {
   assert.deepEqual(validate(entities), []);
   const versioned = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
   assert.deepEqual(versioned, buildIndex(root, entities));
+});
+
+function createEditFixture(content) {
+  const editRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-edit-'));
+  const filePath = path.join(editRoot, '.planner/tickets/EDT-001.md');
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, content);
+  return { editRoot, filePath };
+}
+
+const editableTicket = `---
+id: EDT-001 # id estável
+type: task
+title: Ticket editável
+status: planned # revisar na daily
+priority: medium
+labels:
+    - cli
+    - escrita
+depends_on: []
+---
+
+## Objetivo
+
+Corpo intacto.
+`;
+
+test('set mostra o diff e não grava sem --yes', () => {
+  const { editRoot, filePath } = createEditFixture(editableTicket);
+  try {
+    const result = runCliIn(editRoot, 'set', 'EDT-001', 'status=in_progress', 'labels-=cli');
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /^-status: planned # revisar na daily$/m);
+    assert.match(result.stdout, /^\+status: in_progress # revisar na daily$/m);
+    assert.match(result.stdout, /^-    - cli$/m);
+    assert.match(result.stdout, /Nenhuma alteração gravada/);
+    assert.equal(fs.readFileSync(filePath, 'utf8'), editableTicket);
+  } finally {
+    fs.rmSync(editRoot, { recursive: true, force: true });
+  }
+});
+
+test('set --yes altera só os campos pedidos e preserva o restante do arquivo', () => {
+  const { editRoot, filePath } = createEditFixture(editableTicket);
+  try {
+    const result = runCliIn(editRoot, 'set', 'EDT-001', 'status=done', 'priority=high', 'labels+=ui,cli', '--yes', '--json');
+    assert.equal(result.status, 0, result.stderr);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.written, true);
+    assert.deepEqual(output.changes, [
+      { field: 'status', before: 'planned', after: 'done' },
+      { field: 'priority', before: 'medium', after: 'high' },
+      { field: 'labels', before: ['cli', 'escrita'], after: ['cli', 'escrita', 'ui'] }
+    ]);
+    assert.equal(fs.readFileSync(filePath, 'utf8'), editableTicket
+      .replace('status: planned # revisar na daily', 'status: done # revisar na daily')
+      .replace('priority: medium', 'priority: high')
+      .replace('    - escrita\n', '    - escrita\n    - ui\n'));
+  } finally {
+    fs.rmSync(editRoot, { recursive: true, force: true });
+  }
+});
+
+test('set mantém listas inline, CRLF e insere campos ausentes', () => {
+  const content = '---\r\nid: EDT-001\r\ntitle: Inline\r\nstatus: planned\r\nlabels: [a, b] # tags\r\n---\r\nCorpo.\r\n';
+  const { editRoot, filePath } = createEditFixture(content);
+  try {
+    const result = runCliIn(editRoot, 'set', 'EDT-001', 'labels=c', 'priority=low', '--yes');
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(
+      fs.readFileSync(filePath, 'utf8'),
+      '---\r\nid: EDT-001\r\ntitle: Inline\r\nstatus: planned\r\nlabels: [c] # tags\r\npriority: low\r\n---\r\nCorpo.\r\n'
+    );
+  } finally {
+    fs.rmSync(editRoot, { recursive: true, force: true });
+  }
+});
+
+test('set rejeita valores inválidos antes de escrever', () => {
+  const { editRoot, filePath } = createEditFixture(editableTicket);
+  try {
+    const cases = [
+      [['EDT-001', 'status=feito'], /status inválido: feito/],
+      [['EDT-001', 'priority=muito alta'], /prioridade inválida/],
+      [['EDT-001', 'labels+=a:b'], /label inválida: a:b/],
+      [['EDT-001', 'title=Outro'], /campo não editável: title/],
+      [['EDT-001', 'status+=done'], /status aceita apenas =/],
+      [['EDT-001'], /informe ao menos uma alteração/],
+      [['EDT-999', 'status=done'], /Entidade não encontrada: EDT-999/]
+    ];
+    for (const [args, message] of cases) {
+      const result = runCliIn(editRoot, 'set', ...args, '--yes');
+      assert.equal(result.status, 1, args.join(' '));
+      assert.match(result.stderr, message);
+    }
+    assert.equal(fs.readFileSync(filePath, 'utf8'), editableTicket);
+  } finally {
+    fs.rmSync(editRoot, { recursive: true, force: true });
+  }
+});
+
+test('set sem mudança efetiva não toca o arquivo', () => {
+  const { editRoot } = createEditFixture(editableTicket);
+  try {
+    const result = runCliIn(editRoot, 'set', 'EDT-001', 'status=planned', 'labels+=ui', 'labels-=ui', '--yes');
+    assert.equal(result.status, 0, result.stderr);
+    assert.match(result.stdout, /nenhuma alteração/);
+  } finally {
+    fs.rmSync(editRoot, { recursive: true, force: true });
+  }
+});
+
+test('applyEdit recusa gravar quando o arquivo mudou depois do diff', () => {
+  const { editRoot, filePath } = createEditFixture(editableTicket);
+  try {
+    const plan = planEdit(editRoot, 'EDT-001', ['status=done']);
+    fs.appendFileSync(filePath, 'Edição concorrente.\n');
+    assert.throws(() => applyEdit(editRoot, plan), /mudou desde que o diff foi calculado/);
+    assert.match(fs.readFileSync(filePath, 'utf8'), /status: planned/);
+  } finally {
+    fs.rmSync(editRoot, { recursive: true, force: true });
+  }
 });
