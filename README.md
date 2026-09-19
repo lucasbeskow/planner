@@ -52,7 +52,8 @@ O servidor expõe somente as ferramentas `planner_status`, `planner_list`, `plan
 `planner_context` e `planner_validate`. A configuração do cliente deve apontar para o
 comando acima na raiz deste repositório.
 
-O guia de integração está em `docs/integracao-agentes.md`. O workflow reutilizável dos agentes está em `skills/planner-workflow/`. Ele pode
+A definição do produto (visão, restrições, requisitos e roadmap) está em `docs/prd.md`, fonte
+única do projeto. O guia de integração está em `docs/integracao-agentes.md`. O workflow reutilizável dos agentes está em `skills/planner-workflow/`. Ele pode
 ser empacotado ou instalado no diretório de skills do agente escolhido.
 
 Cada ticket exibido pela UI informa também o caminho do arquivo que originou os dados.
@@ -93,7 +94,7 @@ Objetos aninhados, textos em várias linhas e âncoras não são aceitos. Linhas
 geram erro com o caminho do arquivo.
 
 A descrição exibida nos cards é o primeiro parágrafo da seção `Objetivo` ou, sem ela, do corpo.
-O corpo completo fica disponível em `yarn planner show <id>`.
+O corpo completo fica disponível em `npx planner show <id>`.
 
 ## Próximos passos
 
