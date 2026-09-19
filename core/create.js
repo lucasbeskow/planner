@@ -7,7 +7,8 @@ const {
   parseFrontmatter,
   readConfig,
   readEntities,
-  validationIssues
+  validationIssues,
+  writeIndex
 } = require('./planner');
 
 // Diretório padrão de cada tipo; precisa estar entre as fontes lidas em config.json.
@@ -172,7 +173,8 @@ function planCreate(root, title, assignmentTexts = []) {
   };
 }
 
-// `wx` falha se o arquivo surgir entre o plano e a escrita, em vez de sobrescrevê-lo.
+// `wx` falha se o arquivo surgir entre o plano e a escrita, em vez de sobrescrevê-lo. O índice
+// é regenerado na mesma operação; se falhar, o arquivo criado é removido.
 function applyCreate(root, plan) {
   if (readEntities(root).some(entity => entity.id === plan.id)) {
     throw new Error(`${plan.id} passou a existir depois do plano; execute o comando novamente`);
@@ -184,6 +186,12 @@ function applyCreate(root, plan) {
   } catch (error) {
     if (error.code === 'EEXIST') throw new Error(`${plan.file} já existe; execute o comando novamente`);
     throw error;
+  }
+  try {
+    writeIndex(root);
+  } catch (error) {
+    fs.rmSync(absolutePath, { force: true });
+    throw new Error(`não foi possível atualizar o índice; ${plan.file} foi removido: ${error.message}`);
   }
 }
 

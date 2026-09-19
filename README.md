@@ -54,7 +54,7 @@ O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeç
 - visualização de labels e fonte Markdown;
 - mensagem orientativa quando o índice não pode ser carregado.
 
-Para regenerar o índice depois de editar uma entidade:
+Para regenerar o índice depois de editar uma entidade à mão:
 
 ```bash
 npx planner index
@@ -88,7 +88,8 @@ npx planner set PLN-005 status=in_progress priority=high labels+=ui --yes
 ```
 
 Sem `--yes`, o comando só mostra o diff. Com `--yes`, grava somente as linhas alteradas e
-preserva comentários, ordem das chaves e corpo. Depois de gravar, rode `npx planner index`.
+preserva comentários, ordem das chaves e corpo. `set` e `new` regeneram o índice na mesma
+operação; se o índice não puder ser gravado, a entidade volta ao estado anterior.
 
 Para criar um ticket a partir do template:
 

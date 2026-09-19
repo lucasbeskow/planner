@@ -50,7 +50,7 @@ Answer these questions before advancing:
 4. Implement only the requested scope and add focused tests.
 5. Run relevant project checks and `npx planner validate` when Planner files or relations changed.
 6. Update the ticket status and acceptance evidence only after the checks pass. Change `status`, `priority`, and `labels` with `npx planner set <ID> status=done`: review the printed diff, then repeat with `--yes`. If the transition is refused, resolve the listed reasons; use `--force` only when the user explicitly asks to reopen or skip a step. The evidence records `harness`, `model`, `effort`, `tokens`, `completed_at`, and `validation`; use `unknown` or a justification instead of inventing values (see `docs/prd.md`, "Fechamento de tickets").
-7. Regenerate the projection with `npx planner index`.
+7. `planner set` and `planner new` regenerate the projection; after manual Markdown edits, run `npx planner index`.
 8. Report changed files, checks, evidence, and commit. Leave unresolved ambiguity as an explicit question.
 
 ## Limites

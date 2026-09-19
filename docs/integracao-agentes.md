@@ -30,14 +30,14 @@ npx planner-mcp
 
 O servidor não expõe criação, edição, execução de shell ou regeneração do índice. Para alterar
 o plano, o agente deve editar os arquivos somente quando o usuário autorizar essa mudança,
-depois executar `npx planner validate` e `npx planner index`.
+depois executar `npx planner validate` e `npx planner index`. `planner set` e `planner new`
+já regeneram o índice na mesma escrita.
 
 Para status, prioridade e labels, prefira a CLI, que mostra o diff antes de gravar:
 
 ```bash
 npx planner set PLN-005 status=in_progress labels+=ui   # só mostra o diff
 npx planner set PLN-005 status=in_progress labels+=ui --yes
-npx planner index
 ```
 
 Para registrar trabalho novo, gere o ticket pelo template em vez de escrever o frontmatter:

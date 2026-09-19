@@ -838,3 +838,54 @@ test('new rejeita campos inválidos antes de criar arquivos', () => {
     fs.rmSync(newRoot, { recursive: true, force: true });
   }
 });
+
+test('set e new atualizam o índice na mesma escrita, e só com --yes', () => {
+  const writeRoot = createFixture();
+  const indexPath = path.join(writeRoot, '.planner/index.json');
+  const indexedStatus = id => JSON.parse(fs.readFileSync(indexPath, 'utf8')).tickets.find(ticket => ticket.id === id)?.status;
+  try {
+    assert.equal(runCliIn(writeRoot, 'index').status, 0);
+    const initial = fs.readFileSync(indexPath, 'utf8');
+
+    assert.equal(runCliIn(writeRoot, 'set', 'FIX-002', 'status=in_progress').status, 0);
+    assert.equal(runCliIn(writeRoot, 'new', 'Sem confirmação').status, 0);
+    assert.equal(runCliIn(writeRoot, 'set', 'FIX-002', 'status=done', '--yes').status, 1);
+    assert.equal(fs.readFileSync(indexPath, 'utf8'), initial);
+
+    const edited = JSON.parse(runCliIn(writeRoot, 'set', 'FIX-002', 'status=in_progress', '--yes', '--json').stdout);
+    assert.equal(edited.indexed, true);
+    assert.equal(indexedStatus('FIX-002'), 'in_progress');
+
+    const created = JSON.parse(runCliIn(writeRoot, 'new', 'Novo', '--yes', '--json').stdout);
+    assert.equal(created.indexed, true);
+    assert.equal(indexedStatus(created.id), 'planned');
+    assert.deepEqual(JSON.parse(fs.readFileSync(indexPath, 'utf8')), JSON.parse(JSON.stringify(buildIndex(writeRoot, readEntities(writeRoot)))));
+    assert.deepEqual(fs.readdirSync(path.join(writeRoot, '.planner')).filter(file => file.endsWith('.tmp')), []);
+  } finally {
+    fs.rmSync(writeRoot, { recursive: true, force: true });
+  }
+});
+
+test('falha ao gravar o índice desfaz a escrita da entidade', () => {
+  const writeRoot = createFixture();
+  const ticketPath = path.join(writeRoot, '.planner/tickets/FIX-002-planejado.md');
+  try {
+    // Um diretório no lugar do índice faz o rename falhar depois que a entidade foi gravada.
+    fs.mkdirSync(path.join(writeRoot, '.planner/index.json/bloqueio'), { recursive: true });
+    const original = fs.readFileSync(ticketPath, 'utf8');
+
+    const edited = runCliIn(writeRoot, 'set', 'FIX-002', 'status=in_progress', '--yes');
+    assert.equal(edited.status, 1);
+    assert.match(edited.stderr, /não foi possível atualizar o índice; \.planner\/tickets\/FIX-002-planejado\.md foi restaurado/);
+    assert.equal(fs.readFileSync(ticketPath, 'utf8'), original);
+
+    const before = fs.readdirSync(path.join(writeRoot, '.planner/tickets'));
+    const created = runCliIn(writeRoot, 'new', 'Não fica', '--yes');
+    assert.equal(created.status, 1);
+    assert.match(created.stderr, /não foi possível atualizar o índice; .* foi removido/);
+    assert.deepEqual(fs.readdirSync(path.join(writeRoot, '.planner/tickets')), before);
+    assert.deepEqual(fs.readdirSync(path.join(writeRoot, '.planner')).filter(file => file.endsWith('.tmp')), []);
+  } finally {
+    fs.rmSync(writeRoot, { recursive: true, force: true });
+  }
+});

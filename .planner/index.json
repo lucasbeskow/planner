@@ -6,10 +6,10 @@
   "summary": {
     "total": 9,
     "draft": 0,
-    "planned": 1,
+    "planned": 0,
     "inProgress": 1,
     "blocked": 0,
-    "done": 7,
+    "done": 8,
     "canceled": 0
   },
   "tickets": [
@@ -132,7 +132,7 @@
       "type": "task",
       "title": "Atualizar o índice após escrita autorizada",
       "description": "Regenerar `.planner/index.json` na mesma operação que grava uma entidade.",
-      "status": "planned",
+      "status": "done",
       "priority": "medium",
       "phase": "M1",
       "labels": [

@@ -251,6 +251,21 @@ function buildIndex(root, entities) {
   };
 }
 
+// Grava o índice em arquivo temporário e renomeia: quem lê nunca vê um JSON pela metade.
+function writeIndex(root, entities = readEntities(root)) {
+  const index = buildIndex(root, entities);
+  const indexPath = path.join(root, '.planner', 'index.json');
+  const temporaryPath = `${indexPath}.${process.pid}.tmp`;
+  fs.writeFileSync(temporaryPath, `${JSON.stringify(index, null, 2)}\n`);
+  try {
+    fs.renameSync(temporaryPath, indexPath);
+  } catch (error) {
+    fs.rmSync(temporaryPath, { force: true });
+    throw error;
+  }
+  return index;
+}
+
 function contextFor(entities, id) {
   const entity = entities.find(item => item.id === id);
   if (!entity) return null;
@@ -275,5 +290,6 @@ module.exports = {
   stripComment,
   summary,
   validate,
-  validationIssues
+  validationIssues,
+  writeIndex
 };

@@ -262,7 +262,7 @@ comando só mostra o diff unificado; com `--yes`, grava o mesmo diff. `labels` a
 - A edição é recusada se introduzir um problema de validação novo ou se o arquivo mudar entre o
   cálculo do diff e a gravação.
 - Alterações que não mudam valores não tocam o arquivo.
-- O índice não é regenerado automaticamente; isso fica para PLN-008.
+- Com `--yes`, o índice é regenerado na mesma operação (RF11).
 
 #### RF10 — Criação por template
 
@@ -279,6 +279,15 @@ só mostra o arquivo; com `--yes`, cria o arquivo sem sobrescrever nenhum existe
   aceitam `{{id}}`, `{{title}}` e `{{type}}`.
 - Títulos que o parser leria de outra forma, como os que contêm ` #`, são gravados entre aspas.
 - A criação é recusada se introduzir um problema de validação, como dependência inexistente.
+- Com `--yes`, o índice é regenerado na mesma operação (RF11).
+
+#### RF11 — Escrita consistente com o índice
+
+`planner set --yes` e `planner new --yes` gravam a entidade e regeneram `.planner/index.json`
+na mesma operação. O índice é escrito em arquivo temporário e renomeado, para nunca ficar pela
+metade. Se o índice não puder ser gravado, a entidade editada volta ao conteúdo anterior e a
+entidade criada é removida. Recusas de validação acontecem antes de qualquer escrita, então
+nem a entidade nem o índice mudam. Sem `--yes`, nenhum arquivo é tocado.
 
 ## 4. Expectations — expectativas
 
@@ -321,7 +330,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 48 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 50 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -345,7 +354,7 @@ Este contrato ainda é de processo: o runtime não valida nem projeta esses camp
 
 ## 5. Roadmap
 
-### M1 — edição segura
+### M1 — edição segura (concluído: `planner set`, `planner new`)
 
 - alterar status, prioridade e labels com diff revisável;
 - criar ticket a partir de template;

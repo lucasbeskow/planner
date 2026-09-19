@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { applyCreate, planCreate } = require('./core/create');
 const { applyEdit, planEdit } = require('./core/edit');
-const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
+const { buildIndex, contextFor, readEntities, validate, writeIndex } = require('./core/planner');
 
 const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
@@ -50,8 +50,7 @@ function output(value) {
 
 function indexCommand() {
   const entities = readEntities(root);
-  const index = buildIndex(root, entities);
-  fs.writeFileSync(path.join(root, '.planner', 'index.json'), `${JSON.stringify(index, null, 2)}\n`);
+  writeIndex(root, entities);
   output(`Índice atualizado: ${entities.length} entidades`);
 }
 
@@ -62,12 +61,12 @@ function setCommand() {
   if (write) applyEdit(root, plan);
 
   if (flags.has('--json')) {
-    output({ id: plan.id, file: plan.file, changes: plan.changes, diff: plan.diff, written: write });
+    output({ id: plan.id, file: plan.file, changes: plan.changes, diff: plan.diff, written: write, indexed: write });
   } else if (!plan.changes.length) {
     output(`${plan.id}: nenhuma alteração; os valores já estão aplicados`);
   } else {
     output(`${plan.diff}\n\n${write
-      ? `Gravado em ${plan.file}. Rode npx planner index para atualizar a UI.`
+      ? `Gravado em ${plan.file}; índice atualizado.`
       : 'Nenhuma alteração gravada. Repita com --yes para gravar.'}`);
   }
 }
@@ -78,10 +77,10 @@ function newCommand() {
   if (write) applyCreate(root, plan);
 
   if (flags.has('--json')) {
-    output({ id: plan.id, file: plan.file, template: plan.template, content: plan.content, diff: plan.diff, written: write });
+    output({ id: plan.id, file: plan.file, template: plan.template, content: plan.content, diff: plan.diff, written: write, indexed: write });
   } else {
     output(`${plan.diff}\n\n${write
-      ? `Criado ${plan.id} em ${plan.file}. Rode npx planner index para atualizar a UI.`
+      ? `Criado ${plan.id} em ${plan.file}; índice atualizado.`
       : 'Nenhum arquivo criado. Repita com --yes para criar.'}`);
   }
 }
@@ -110,7 +109,7 @@ function initCommand() {
   if (errors.length) throw new Error(`não foi possível inicializar: ${errors.join('; ')}`);
 
   const indexPath = path.join(plannerRoot, 'index.json');
-  fs.writeFileSync(indexPath, `${JSON.stringify(buildIndex(root, entities), null, 2)}\n`);
+  writeIndex(root, entities);
   if (!created.includes(path.relative(root, indexPath))) created.push(path.relative(root, indexPath));
 
   output(flags.has('--json')

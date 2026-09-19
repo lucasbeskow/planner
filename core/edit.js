@@ -1,6 +1,6 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { ALLOWED_STATUSES, parseFrontmatter, readEntities, stripComment, validationIssues } = require('./planner');
+const { ALLOWED_STATUSES, parseFrontmatter, readEntities, stripComment, validationIssues, writeIndex } = require('./planner');
 const { transitionIssues } = require('./transitions');
 
 const EDITABLE_FIELDS = ['status', 'priority', 'labels'];
@@ -218,13 +218,21 @@ function planEdit(root, id, assignmentTexts, { force = false } = {}) {
   return plan;
 }
 
-// Grava somente se o arquivo não mudou desde o plano, para não sobrescrever edições concorrentes.
+// Grava somente se o arquivo não mudou desde o plano, para não sobrescrever edições concorrentes,
+// e regenera o índice na mesma operação. Se o índice falhar, o arquivo volta ao conteúdo
+// anterior, para que entidade e projeção nunca fiquem divergentes.
 function applyEdit(root, plan) {
   const absolutePath = path.join(root, plan.file);
   if (fs.readFileSync(absolutePath, 'utf8') !== plan.before) {
     throw new Error(`${plan.file} mudou desde que o diff foi calculado; execute o comando novamente`);
   }
   fs.writeFileSync(absolutePath, plan.after);
+  try {
+    writeIndex(root);
+  } catch (error) {
+    fs.writeFileSync(absolutePath, plan.before);
+    throw new Error(`não foi possível atualizar o índice; ${plan.file} foi restaurado: ${error.message}`);
+  }
 }
 
 module.exports = { EDITABLE_FIELDS, TOKEN, applyEdit, parseAssignment, planEdit, unifiedDiff };
