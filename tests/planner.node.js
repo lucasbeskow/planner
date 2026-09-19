@@ -15,6 +15,40 @@ test('lê frontmatter escalar e arrays', () => {
   assert.match(parsed.body, /Ler arquivos/);
 });
 
+test('converte tipos escalares e arrays inline do frontmatter', () => {
+  const parsed = parseFrontmatter(`---
+enabled: true
+retries: 3
+labels: [core, parser]
+quoted: "texto"
+---
+Conteúdo.`, 'typed.md');
+
+  assert.equal(parsed.attributes.enabled, true);
+  assert.equal(parsed.attributes.retries, 3);
+  assert.deepEqual(parsed.attributes.labels, ['core', 'parser']);
+  assert.equal(parsed.attributes.quoted, 'texto');
+  assert.equal(parsed.body, 'Conteúdo.');
+});
+
+test('aceita arquivos sem frontmatter', () => {
+  const parsed = parseFrontmatter('## Apenas Markdown\n\nConteúdo.', 'plain.md');
+
+  assert.deepEqual(parsed.attributes, {});
+  assert.equal(parsed.body, '## Apenas Markdown\n\nConteúdo.');
+});
+
+test('rejeita frontmatter malformado com caminho do arquivo', () => {
+  assert.throws(
+    () => parseFrontmatter('---\nid: PLN-TEST\n', 'broken.md'),
+    /broken\.md: frontmatter não terminou/
+  );
+  assert.throws(
+    () => parseFrontmatter('---\nid: PLN-TEST\nlinha inválida\n---', 'invalid.md'),
+    /invalid\.md: linha inválida no frontmatter/
+  );
+});
+
 test('carrega as entidades versionadas do Planner', () => {
   const entities = readEntities(root);
   assert.equal(entities.length, 10);
