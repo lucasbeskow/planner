@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
+const util = require('node:util');
 const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
 
 const root = path.resolve(__dirname, '../..');
@@ -162,6 +163,23 @@ test('o índice versionado é consistente', () => {
 
   assert.equal(index.summary.total, index.tickets.length);
   assert.ok(index.tickets.every(ticket => fs.existsSync(path.join(root, ticket.source))));
+});
+
+test('o índice versionado está atualizado com os arquivos Markdown', () => {
+  // Nome da pasta, branch e ordem de leitura dependem de onde o índice foi gerado;
+  // nenhum deles indica um índice desatualizado.
+  const committed = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
+  const generated = JSON.parse(JSON.stringify(buildIndex(root, readEntities(root))));
+  const byId = index => new Map(index.tickets.map(ticket => [ticket.id, JSON.stringify(ticket)]));
+  const committedTickets = byId(committed);
+  const generatedTickets = byId(generated);
+  const ids = new Set([...committedTickets.keys(), ...generatedTickets.keys()]);
+  const stale = [...ids].filter(id => committedTickets.get(id) !== generatedTickets.get(id)).sort();
+
+  if (!util.isDeepStrictEqual(committed.summary, generated.summary)) stale.push('summary');
+  if (committed.repository.initiative !== generated.repository.initiative) stale.push('repository.initiative');
+
+  assert.deepEqual(stale, [], `.planner/index.json está desatualizado (${stale.join(', ')}); rode yarn planner:index`);
 });
 
 test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
