@@ -40,6 +40,9 @@ npx planner set PLN-005 status=in_progress labels+=ui --yes
 npx planner index
 ```
 
+Transições fora do fluxo, como concluir um ticket com dependências abertas, são recusadas com
+os motivos. Use `--force` somente quando o usuário pedir para reabrir ou pular uma etapa.
+
 ## Skill de workflow
 
 A skill reutilizável está em `skills/planner-workflow/`. Ela documenta a sequência

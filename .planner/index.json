@@ -6,10 +6,10 @@
   "summary": {
     "total": 9,
     "draft": 0,
-    "planned": 3,
+    "planned": 2,
     "inProgress": 1,
     "blocked": 0,
-    "done": 5,
+    "done": 6,
     "canceled": 0
   },
   "tickets": [
@@ -115,7 +115,7 @@
       "type": "task",
       "title": "Validar transições de status antes de salvar",
       "description": "Impedir transições incoerentes, como concluir um ticket com dependências abertas.",
-      "status": "planned",
+      "status": "done",
       "priority": "medium",
       "phase": "M1",
       "labels": [

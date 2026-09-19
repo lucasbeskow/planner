@@ -88,7 +88,6 @@ ferramentas de revisão ou deploy.
 Fora do escopo do MVP:
 
 - editar entidades pela UI ou pelo MCP (a CLI edita campos com `planner set`, no M1);
-- impor transições de estado;
 - grafo visual de dependências;
 - sincronizar automaticamente com Linear, GitHub, GitLab ou outro SaaS;
 - editar código, fazer deploy ou executar comandos sem confirmação;
@@ -124,8 +123,8 @@ draft | planned | in_progress | blocked | done | canceled
   são inválidos.
 - O índice nunca é fonte de escrita.
 
-O runtime valida os valores de status, mas não implementa uma máquina de transições. O fluxo
-abaixo é orientação de processo:
+O runtime valida os valores de status. `planner set` aplica o fluxo abaixo, declarado em
+`core/transitions.js`; edições manuais do Markdown não passam por ele:
 
 ```text
 draft → planned → in_progress → done
@@ -133,6 +132,11 @@ draft → planned → in_progress → done
                    blocked
      (qualquer estado não final) → canceled
 ```
+
+- `done` e `canceled` são finais; reabrir exige `--force`.
+- `done` exige que as dependências estejam `done` ou `canceled`. Dependências do tipo
+  `initiative` não contam, porque a iniciativa agrupa os tickets e termina depois deles.
+- Iniciar um ticket (`in_progress`) com dependências abertas é permitido.
 
 A iniciativa ativa é a primeira entidade `initiative` que não esteja `done` ou `canceled`; sem
 ela, usa-se a primeira iniciativa encontrada. O nome do repositório vem de
@@ -170,6 +174,7 @@ arquivos Markdown em .planner/
 ```
 
 - `core/planner.js` concentra parser, leitura, resumo, projeção, contexto e validação;
+- `core/transitions.js` declara as transições de status permitidas;
 - `core/edit.js` calcula edições de frontmatter como diff e grava somente um plano revisado;
 - `cli.js` oferece consulta, inicialização, edição de campos e regeneração do índice;
 - `mcp.js` adapta o mesmo domínio ao protocolo MCP por stdio;
@@ -251,6 +256,8 @@ comando só mostra o diff unificado; com `--yes`, grava o mesmo diff. `labels` a
 - Campo ausente é inserido no fim do frontmatter.
 - Status fora da lista aceita, prioridade ou label que não sejam um token simples (letras,
   números, `_` ou `-`), campos não editáveis e ids inexistentes são rejeitados antes da escrita.
+- Mudanças de status seguem as transições do domínio (seção 2). A recusa lista cada motivo;
+  `--force` ignora só as transições, nunca a validação de valores ou do plano.
 - A edição é recusada se introduzir um problema de validação novo ou se o arquivo mudar entre o
   cálculo do diff e a gravação.
 - Alterações que não mudam valores não tocam o arquivo.
@@ -297,7 +304,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 42 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 45 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 

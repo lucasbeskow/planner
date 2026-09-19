@@ -90,6 +90,11 @@ npx planner set PLN-005 status=in_progress priority=high labels+=ui --yes
 Sem `--yes`, o comando só mostra o diff. Com `--yes`, grava somente as linhas alteradas e
 preserva comentários, ordem das chaves e corpo. Depois de gravar, rode `npx planner index`.
 
+Mudanças de status seguem `draft → planned → in_progress → done`, com `blocked` a partir de
+`in_progress` e `canceled` a partir de qualquer status não final. `done` exige dependências
+concluídas ou canceladas. Quando a transição é recusada, a CLI lista os motivos; `--force`
+permite reabrir ou pular etapas.
+
 Para conectar um agente compatível com MCP, use o comando local por stdio:
 
 ```bash
@@ -149,6 +154,5 @@ na raiz para ver a UI com o planejamento do próprio Planner.
 
 ## Próximos passos
 
-As próximas evoluções do Planner são criação de tickets por template, validação de transições
-de status, atualização do índice na mesma operação de escrita e integrações opcionais com
+As próximas evoluções do Planner são criação de tickets por template, atualização do índice na mesma operação de escrita e integrações opcionais com
 serviços externos. Os itens estão em `.planner/tickets/`.

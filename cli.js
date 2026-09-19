@@ -23,10 +23,14 @@ Comandos:
   validate               valida entidades e dependências
   set <id> <campo=valor>...
                          mostra o diff de status, priority ou labels;
-                         grava somente com --yes
+                         grava somente com --yes; --force permite
+                         transições de status fora do fluxo
   index                  regenera o índice derivado
   help, -h, --help       mostra esta ajuda
 
+Em set, status segue draft → planned → in_progress → done, com blocked a partir de
+in_progress e canceled a partir de qualquer status não final. done exige dependências
+concluídas ou canceladas; iniciativas não contam como dependência.
 Em set, labels aceita labels=a,b (substitui), labels+=a e labels-=a.
 
 --json retorna dados estruturados para agentes e scripts.
@@ -46,7 +50,7 @@ function indexCommand() {
 
 // Sem --yes, set só mostra o diff: nenhuma escrita acontece sem confirmação explícita.
 function setCommand() {
-  const plan = planEdit(root, argument, rest);
+  const plan = planEdit(root, argument, rest, { force: flags.has('--force') });
   const write = flags.has('--yes') && plan.changes.length > 0;
   if (write) applyEdit(root, plan);
 

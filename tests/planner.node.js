@@ -606,17 +606,17 @@ test('set mostra o diff e não grava sem --yes', () => {
 test('set --yes altera só os campos pedidos e preserva o restante do arquivo', () => {
   const { editRoot, filePath } = createEditFixture(editableTicket);
   try {
-    const result = runCliIn(editRoot, 'set', 'EDT-001', 'status=done', 'priority=high', 'labels+=ui,cli', '--yes', '--json');
+    const result = runCliIn(editRoot, 'set', 'EDT-001', 'status=in_progress', 'priority=high', 'labels+=ui,cli', '--yes', '--json');
     assert.equal(result.status, 0, result.stderr);
     const output = JSON.parse(result.stdout);
     assert.equal(output.written, true);
     assert.deepEqual(output.changes, [
-      { field: 'status', before: 'planned', after: 'done' },
+      { field: 'status', before: 'planned', after: 'in_progress' },
       { field: 'priority', before: 'medium', after: 'high' },
       { field: 'labels', before: ['cli', 'escrita'], after: ['cli', 'escrita', 'ui'] }
     ]);
     assert.equal(fs.readFileSync(filePath, 'utf8'), editableTicket
-      .replace('status: planned # revisar na daily', 'status: done # revisar na daily')
+      .replace('status: planned # revisar na daily', 'status: in_progress # revisar na daily')
       .replace('priority: medium', 'priority: high')
       .replace('    - escrita\n', '    - escrita\n    - ui\n'));
   } finally {
@@ -676,11 +676,78 @@ test('set sem mudança efetiva não toca o arquivo', () => {
 test('applyEdit recusa gravar quando o arquivo mudou depois do diff', () => {
   const { editRoot, filePath } = createEditFixture(editableTicket);
   try {
-    const plan = planEdit(editRoot, 'EDT-001', ['status=done']);
+    const plan = planEdit(editRoot, 'EDT-001', ['status=in_progress']);
     fs.appendFileSync(filePath, 'Edição concorrente.\n');
     assert.throws(() => applyEdit(editRoot, plan), /mudou desde que o diff foi calculado/);
     assert.match(fs.readFileSync(filePath, 'utf8'), /status: planned/);
   } finally {
     fs.rmSync(editRoot, { recursive: true, force: true });
+  }
+});
+
+function createTransitionFixture() {
+  const transitionRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-transition-'));
+  const entities = [
+    ['initiatives/TRN-001.md', 'TRN-001', 'initiative', 'in_progress', []],
+    ['tickets/TRN-002.md', 'TRN-002', 'task', 'in_progress', []],
+    ['tickets/TRN-003.md', 'TRN-003', 'task', 'in_progress', ['TRN-001', 'TRN-002']],
+    ['tickets/TRN-004.md', 'TRN-004', 'task', 'done', []],
+    ['tickets/TRN-005.md', 'TRN-005', 'task', 'planned', []],
+    ['tickets/TRN-006.md', 'TRN-006', 'task', 'in_progress', ['TRN-001', 'TRN-004', 'TRN-007']],
+    ['tickets/TRN-007.md', 'TRN-007', 'task', 'canceled', []]
+  ];
+  for (const [file, id, type, status, dependsOn] of entities) {
+    const filePath = path.join(transitionRoot, '.planner', file);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `---\nid: ${id}\ntype: ${type}\ntitle: ${id}\nstatus: ${status}\ndepends_on: [${dependsOn.join(', ')}]\n---\n`);
+  }
+  return transitionRoot;
+}
+
+test('set recusa transições fora do fluxo e explica o motivo', () => {
+  const transitionRoot = createTransitionFixture();
+  try {
+    const cases = [
+      [['TRN-005', 'status=done'], /transição planned → done não permitida \(a partir de planned: in_progress, canceled\)/],
+      [['TRN-004', 'status=in_progress'], /TRN-004: done é um status final; use --force para reabrir/],
+      [['TRN-007', 'status=planned'], /TRN-007: canceled é um status final/],
+      [['TRN-003', 'status=done'], /TRN-003: não pode ser concluído com dependências abertas: TRN-002 \[in_progress\]/]
+    ];
+    for (const [args, message] of cases) {
+      const result = runCliIn(transitionRoot, 'set', ...args, '--yes');
+      assert.equal(result.status, 1, args.join(' '));
+      assert.match(result.stderr, /transição recusada:/);
+      assert.match(result.stderr, message);
+    }
+    assert.match(fs.readFileSync(path.join(transitionRoot, '.planner/tickets/TRN-004.md'), 'utf8'), /status: done/);
+  } finally {
+    fs.rmSync(transitionRoot, { recursive: true, force: true });
+  }
+});
+
+test('set aceita transições do fluxo e ignora iniciativas como dependência', () => {
+  const transitionRoot = createTransitionFixture();
+  try {
+    for (const args of [['TRN-005', 'status=in_progress'], ['TRN-002', 'status=blocked'], ['TRN-006', 'status=done'], ['TRN-003', 'status=canceled']]) {
+      const result = runCliIn(transitionRoot, 'set', ...args, '--yes');
+      assert.equal(result.status, 0, `${args.join(' ')}: ${result.stderr}`);
+    }
+  } finally {
+    fs.rmSync(transitionRoot, { recursive: true, force: true });
+  }
+});
+
+test('set --force permite reabrir, mas não ignora valores inválidos', () => {
+  const transitionRoot = createTransitionFixture();
+  try {
+    const reopened = runCliIn(transitionRoot, 'set', 'TRN-004', 'status=in_progress', '--force', '--yes');
+    assert.equal(reopened.status, 0, reopened.stderr);
+    assert.match(fs.readFileSync(path.join(transitionRoot, '.planner/tickets/TRN-004.md'), 'utf8'), /status: in_progress/);
+
+    const invalid = runCliIn(transitionRoot, 'set', 'TRN-004', 'status=feito', '--force', '--yes');
+    assert.equal(invalid.status, 1);
+    assert.match(invalid.stderr, /status inválido: feito/);
+  } finally {
+    fs.rmSync(transitionRoot, { recursive: true, force: true });
   }
 });

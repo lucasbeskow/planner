@@ -1,6 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { ALLOWED_STATUSES, parseFrontmatter, readEntities, stripComment, validationIssues } = require('./planner');
+const { transitionIssues } = require('./transitions');
 
 const EDITABLE_FIELDS = ['status', 'priority', 'labels'];
 // Prioridade e labels não têm vocabulário fechado; exigir um token simples evita valores que
@@ -141,7 +142,8 @@ function unifiedDiff(filePath, before, after, context = 3) {
 }
 
 // Calcula a edição sem gravar nada. A escrita só acontece em applyEdit, com o plano revisado.
-function planEdit(root, id, assignmentTexts) {
+// `force` ignora as regras de transição de status, nunca a validação do plano.
+function planEdit(root, id, assignmentTexts, { force = false } = {}) {
   if (!id) throw new Error('informe o id da entidade para set');
   if (!assignmentTexts.length) throw new Error('informe ao menos uma alteração, como status=done');
   const assignments = assignmentTexts.map(parseAssignment);
@@ -189,6 +191,12 @@ function planEdit(root, id, assignmentTexts) {
     before,
     after
   };
+
+  const statusChange = effective.find(change => change.field === 'status');
+  if (statusChange && !force) {
+    const refused = transitionIssues(entities, entity, statusChange.after);
+    if (refused.length) throw new Error(`transição recusada:\n${refused.map(reason => `  - ${reason}`).join('\n')}`);
+  }
 
   // Rejeita a edição se ela introduzir problemas de validação que ainda não existiam.
   if (effective.length) {
