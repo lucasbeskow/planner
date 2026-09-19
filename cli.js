@@ -4,16 +4,18 @@ const path = require('node:path');
 const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
 
 const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
+const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
 const rawArguments = process.argv.slice(2);
 const isFlag = value => value.startsWith('-');
 const flags = new Set(rawArguments.filter(isFlag));
 const positional = rawArguments.filter(value => !isFlag(value));
 const [command = 'status', argument] = positional;
 
-const usage = `Uso: yarn planner <comando> [argumento] [--json]
+const usage = `Uso: npx planner <comando> [argumento] [--json]
 
 Comandos:
   status                 resumo por status
+  init                   inicializa .planner no repositório atual
   list [status]          lista entidades, opcionalmente filtradas
   show <id>              mostra uma entidade
   context <id>           mostra dependências e dependentes
@@ -35,6 +37,38 @@ function indexCommand() {
   output(`Índice atualizado: ${entities.length} entidades`);
 }
 
+function initCommand() {
+  const plannerRoot = path.join(root, '.planner');
+  const created = [];
+  fs.mkdirSync(plannerRoot, { recursive: true });
+
+  for (const source of DEFAULT_SOURCES) {
+    const directory = path.join(plannerRoot, source);
+    if (!fs.existsSync(directory)) {
+      fs.mkdirSync(directory, { recursive: true });
+      created.push(path.relative(root, directory));
+    }
+  }
+
+  const configPath = path.join(plannerRoot, 'config.json');
+  if (!fs.existsSync(configPath)) {
+    fs.writeFileSync(configPath, `${JSON.stringify({ sources: DEFAULT_SOURCES, index: 'index.json' }, null, 2)}\n`);
+    created.push(path.relative(root, configPath));
+  }
+
+  const entities = readEntities(root);
+  const errors = validate(entities);
+  if (errors.length) throw new Error(`não foi possível inicializar: ${errors.join('; ')}`);
+
+  const indexPath = path.join(plannerRoot, 'index.json');
+  fs.writeFileSync(indexPath, `${JSON.stringify(buildIndex(root, entities), null, 2)}\n`);
+  if (!created.includes(path.relative(root, indexPath))) created.push(path.relative(root, indexPath));
+
+  output(flags.has('--json')
+    ? { root, created, entities: entities.length }
+    : `Planner inicializado em ${path.relative(process.cwd(), plannerRoot) || '.planner'} (${entities.length} entidades)`);
+}
+
 if (flags.has('--help') || flags.has('-h') || command === 'help') {
   console.log(usage);
 } else {
@@ -42,6 +76,9 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
     const entities = readEntities(root);
 
     switch (command) {
+      case 'init':
+        initCommand();
+        break;
       case 'status':
         output(buildIndex(root, entities).summary);
         break;

@@ -386,7 +386,7 @@ test('a CLI mostra o corpo completo em show', () => {
 test('a CLI oferece ajuda e erros acionáveis', () => {
   const shortHelp = runCli('-h');
   assert.equal(shortHelp.status, 0);
-  assert.match(shortHelp.stdout, /^Uso: yarn planner/);
+  assert.match(shortHelp.stdout, /^Uso: npx planner/);
 
   const help = runCli('--help');
   const missing = runCli('show');
@@ -398,6 +398,30 @@ test('a CLI oferece ajuda e erros acionáveis', () => {
   assert.match(missing.stderr, /informe o id da entidade/);
   assert.equal(unknown.status, 1);
   assert.match(unknown.stderr, /comando desconhecido/);
+});
+
+test('a CLI inicializa um repositório sem sobrescrever configuração existente', () => {
+  const target = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-init-'));
+
+  try {
+    const first = runCliIn(target, 'init', '--json');
+    assert.equal(first.status, 0);
+    const result = JSON.parse(first.stdout);
+    assert.equal(result.entities, 0);
+    assert.ok(result.created.includes('.planner/config.json'));
+    assert.ok(fs.existsSync(path.join(target, '.planner/tickets')));
+    assert.equal(JSON.parse(fs.readFileSync(path.join(target, '.planner/index.json'))).summary.total, 0);
+
+    const configPath = path.join(target, '.planner/config.json');
+    fs.writeFileSync(configPath, JSON.stringify({ sources: ['tickets'], index: 'index.json', repository: 'minha-app' }));
+    const second = runCliIn(target, 'init', '--json');
+
+    assert.equal(second.status, 0);
+    assert.equal(JSON.parse(fs.readFileSync(configPath)).repository, 'minha-app');
+    assert.deepEqual(JSON.parse(second.stdout).created, ['.planner/index.json']);
+  } finally {
+    fs.rmSync(target, { recursive: true, force: true });
+  }
 });
 
 test('o servidor MCP expõe ferramentas somente leitura', () => {

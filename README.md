@@ -22,6 +22,15 @@ Para regenerar o índice depois de editar uma entidade:
 npx planner index
 ```
 
+Para preparar uma aplicação consumidora pela primeira vez:
+
+```bash
+npx planner init
+```
+
+O comando cria `.planner/`, as fontes padrão, `config.json` e o índice inicial. Ele preserva
+configurações existentes e pode ser executado novamente com segurança.
+
 A CLI também pode ser usada por agentes e scripts:
 
 ```bash
