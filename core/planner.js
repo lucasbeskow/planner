@@ -147,11 +147,29 @@ function summary(entities) {
   }, { total: 0, planned: 0, inProgress: 0, blocked: 0, done: 0 });
 }
 
+function repositoryName(root, config) {
+  if (config.repository) return config.repository;
+  const packagePath = path.join(root, 'package.json');
+  if (fs.existsSync(packagePath)) {
+    const { name } = JSON.parse(fs.readFileSync(packagePath, 'utf8'));
+    if (name) return name;
+  }
+  return path.basename(root);
+}
+
+function initiativeTitle(entities, config) {
+  if (config.initiative) return config.initiative;
+  const initiatives = entities.filter(entity => entity.type === 'initiative');
+  const active = initiatives.find(entity => !['done', 'canceled'].includes(entity.status));
+  return (active || initiatives[0])?.title || 'Planner';
+}
+
 function buildIndex(root, entities) {
+  const config = readConfig(root);
   // O branch não entra na projeção versionada: ele mudaria o arquivo conforme o branch que o gerou.
   const repository = {
-    name: path.basename(root),
-    initiative: 'Planner local de engenharia'
+    name: repositoryName(root, config),
+    initiative: initiativeTitle(entities, config)
   };
   return {
     repository,

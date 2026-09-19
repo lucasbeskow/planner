@@ -20,8 +20,12 @@ const fixtureEntities = {
   'tickets/FIX-004-bloqueado.md': { id: 'FIX-004', type: 'task', status: 'blocked', dependsOn: [] }
 };
 
-function createFixture() {
+function createFixture(config) {
   const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-fixture-'));
+  if (config) {
+    fs.mkdirSync(path.join(fixtureRoot, '.planner'));
+    fs.writeFileSync(path.join(fixtureRoot, '.planner/config.json'), JSON.stringify(config));
+  }
   for (const [file, entity] of Object.entries(fixtureEntities)) {
     const filePath = path.join(fixtureRoot, '.planner', file);
     const dependsOn = entity.dependsOn.length ? `depends_on:\n${entity.dependsOn.map(id => `  - ${id}`).join('\n')}` : 'depends_on: []';
@@ -47,7 +51,11 @@ Descrição de ${entity.id}.
 }
 
 const fixtureRoot = createFixture();
-test.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }));
+const configuredFixtureRoot = createFixture({ repository: 'repositorio-fixture', initiative: 'Iniciativa configurada' });
+test.after(() => {
+  fs.rmSync(fixtureRoot, { recursive: true, force: true });
+  fs.rmSync(configuredFixtureRoot, { recursive: true, force: true });
+});
 
 function runCli(...args) {
   return spawnSync(process.execPath, [cliPath, ...args], {
@@ -166,7 +174,6 @@ test('o índice versionado é consistente', () => {
 });
 
 test('o índice versionado está atualizado com os arquivos Markdown', () => {
-  // O nome da pasta depende de onde o repositório foi clonado e não indica um índice desatualizado.
   const committed = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
   const generated = JSON.parse(JSON.stringify(buildIndex(root, readEntities(root))));
   const byId = index => new Map(index.tickets.map(ticket => [ticket.id, JSON.stringify(ticket)]));
@@ -176,7 +183,7 @@ test('o índice versionado está atualizado com os arquivos Markdown', () => {
   const stale = [...ids].filter(id => committedTickets.get(id) !== generatedTickets.get(id)).sort();
 
   if (!util.isDeepStrictEqual(committed.summary, generated.summary)) stale.push('summary');
-  if (committed.repository.initiative !== generated.repository.initiative) stale.push('repository.initiative');
+  if (!util.isDeepStrictEqual(committed.repository, generated.repository)) stale.push('repository');
 
   assert.deepEqual(stale, [], `.planner/index.json está desatualizado (${stale.join(', ')}); rode yarn planner:index`);
 });
@@ -186,6 +193,22 @@ test('o índice é determinístico e não depende do branch atual', () => {
 
   assert.deepEqual(index.tickets.map(ticket => ticket.id), ['FIX-001', 'FIX-002', 'FIX-003', 'FIX-004']);
   assert.equal('branch' in index.repository, false);
+});
+
+test('o índice usa o repositório e a iniciativa configurados', () => {
+  const index = buildIndex(configuredFixtureRoot, readEntities(configuredFixtureRoot));
+
+  assert.deepEqual(index.repository, { name: 'repositorio-fixture', initiative: 'Iniciativa configurada' });
+});
+
+test('sem configuração, o índice usa o package.json e a iniciativa ativa', () => {
+  fs.writeFileSync(path.join(fixtureRoot, 'package.json'), JSON.stringify({ name: 'pacote-fixture' }));
+  try {
+    const index = buildIndex(fixtureRoot, readEntities(fixtureRoot));
+    assert.deepEqual(index.repository, { name: 'pacote-fixture', initiative: 'Entidade FIX-001' });
+  } finally {
+    fs.rmSync(path.join(fixtureRoot, 'package.json'));
+  }
 });
 
 test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
