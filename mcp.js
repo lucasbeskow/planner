@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 const readline = require('node:readline');
 const path = require('node:path');
-const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
+const { buildIndex, contextFor, readEntities, validationReport } = require('./core/planner');
 
 const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
 const serverInfo = { name: 'planner-local', version: '0.1.0' };
@@ -43,7 +43,7 @@ const tools = [
   },
   {
     name: 'planner_validate',
-    description: 'Valida entidades, referências e ciclos de dependência.',
+    description: 'Valida entidades, referências e ciclos de dependência, e avisa sobre tasks sem critérios de aceite.',
     inputSchema: { type: 'object', properties: {}, additionalProperties: false }
   }
 ];
@@ -74,8 +74,7 @@ function callTool(name, argumentsValue = {}) {
       return result(context);
     }
     case 'planner_validate': {
-      const errors = validate(entities);
-      return result({ valid: errors.length === 0, errors, total: entities.length });
+      return result(validationReport(entities));
     }
     default:
       return errorResult(`Ferramenta desconhecida: ${name}`);

@@ -119,22 +119,3 @@ export function renderMarkdown(source) {
   return html.join('\n');
 }
 
-// Conta os itens de checklist da seção de critérios de aceite, quando ela existe.
-export function acceptanceProgress(source) {
-  const lines = stripFrontmatter(source).split(/\r?\n/);
-  const start = lines.findIndex(line => /^#{1,6}\s+crit[ée]rios de aceite/i.test(line));
-  if (start < 0) return null;
-  const level = lines[start].match(/^#+/)[0].length;
-  let total = 0;
-  let done = 0;
-  for (const line of lines.slice(start + 1)) {
-    const heading = line.match(/^(#{1,6})\s/);
-    if (heading && heading[1].length <= level) break;
-    const task = line.match(/^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]/);
-    if (task) {
-      total += 1;
-      if (task[1] !== ' ') done += 1;
-    }
-  }
-  return { done, total };
-}

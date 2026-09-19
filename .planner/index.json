@@ -6,10 +6,10 @@
   "summary": {
     "total": 16,
     "draft": 0,
-    "planned": 7,
+    "planned": 6,
     "inProgress": 1,
     "blocked": 0,
-    "done": 8,
+    "done": 9,
     "canceled": 0
   },
   "tickets": [
@@ -25,6 +25,11 @@
         "roadmap"
       ],
       "dependsOn": [],
+      "acceptance": {
+        "done": 5,
+        "total": 5
+      },
+      "warnings": [],
       "source": ".planner/initiatives/PLN-001-mvp-local.md"
     },
     {
@@ -42,6 +47,11 @@
       "dependsOn": [
         "PLN-001"
       ],
+      "acceptance": {
+        "done": 3,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-002-fixture-versionada.md"
     },
     {
@@ -58,6 +68,11 @@
       "dependsOn": [
         "PLN-002"
       ],
+      "acceptance": {
+        "done": 3,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-003-corpo-na-ui.md"
     },
     {
@@ -74,6 +89,11 @@
       "dependsOn": [
         "PLN-002"
       ],
+      "acceptance": {
+        "done": 3,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-004-dependentes-na-ui.md"
     },
     {
@@ -91,6 +111,11 @@
       "dependsOn": [
         "PLN-001"
       ],
+      "acceptance": {
+        "done": 3,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-005-edicao-de-campos.md"
     },
     {
@@ -108,6 +133,11 @@
       "dependsOn": [
         "PLN-001"
       ],
+      "acceptance": {
+        "done": 3,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-006-ticket-por-template.md"
     },
     {
@@ -125,6 +155,11 @@
       "dependsOn": [
         "PLN-005"
       ],
+      "acceptance": {
+        "done": 2,
+        "total": 2
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-007-validar-transicoes.md"
     },
     {
@@ -143,6 +178,11 @@
         "PLN-005",
         "PLN-006"
       ],
+      "acceptance": {
+        "done": 2,
+        "total": 2
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-008-indice-apos-escrita.md"
     },
     {
@@ -159,6 +199,8 @@
       "dependsOn": [
         "PLN-002"
       ],
+      "acceptance": null,
+      "warnings": [],
       "source": ".planner/decisions/PLN-009-fixture-oficial.md"
     },
     {
@@ -173,6 +215,11 @@
         "roadmap"
       ],
       "dependsOn": [],
+      "acceptance": {
+        "done": 1,
+        "total": 6
+      },
+      "warnings": [],
       "source": ".planner/initiatives/PLN-010-m2-contexto-de-engenharia.md"
     },
     {
@@ -180,7 +227,7 @@
       "type": "task",
       "title": "Apontar tickets sem critérios de aceite",
       "description": "Mostrar quais tickets não têm critérios de aceite verificáveis, antes que alguém comece ou feche o trabalho.",
-      "status": "planned",
+      "status": "done",
       "priority": "high",
       "phase": "M2",
       "labels": [
@@ -189,6 +236,11 @@
       "dependsOn": [
         "PLN-010"
       ],
+      "acceptance": {
+        "done": 4,
+        "total": 4
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-011-apontar-tickets-sem-criterios-de-aceite.md"
     },
     {
@@ -205,6 +257,11 @@
       "dependsOn": [
         "PLN-010"
       ],
+      "acceptance": {
+        "done": 0,
+        "total": 2
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-012-listar-especificacoes-e-decisoes-na-ui.md"
     },
     {
@@ -221,6 +278,11 @@
       "dependsOn": [
         "PLN-010"
       ],
+      "acceptance": {
+        "done": 0,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-013-validar-links-e-referencias-externas.md"
     },
     {
@@ -238,6 +300,11 @@
       "dependsOn": [
         "PLN-010"
       ],
+      "acceptance": {
+        "done": 0,
+        "total": 3
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-014-registrar-e-projetar-evidencias-de-execucao.md"
     },
     {
@@ -254,6 +321,11 @@
       "dependsOn": [
         "PLN-010"
       ],
+      "acceptance": {
+        "done": 0,
+        "total": 2
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-015-relacionar-ticket-commit-e-pull-request.md"
     },
     {
@@ -270,6 +342,11 @@
       "dependsOn": [
         "PLN-010"
       ],
+      "acceptance": {
+        "done": 0,
+        "total": 2
+      },
+      "warnings": [],
       "source": ".planner/tickets/PLN-016-mostrar-grafo-visual-de-dependencias.md"
     }
   ]

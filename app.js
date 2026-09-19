@@ -1,4 +1,4 @@
-import { acceptanceProgress, escapeHtml, renderMarkdown } from './markdown.mjs';
+import { escapeHtml, renderMarkdown } from './markdown.mjs';
 
 // Status opcionais só ganham card e coluna quando existe algum item neles.
 const STATUS = [
@@ -109,6 +109,9 @@ function ticketCard(ticket) {
       <span class="ticket-description">${escapeHtml(ticket.description)}</span>
       <span class="ticket-meta">
         <span>${escapeHtml(ticket.phase)}</span>
+        ${ticket.warnings?.length
+          ? `<span class="warning-badge" title="${escapeHtml(ticket.warnings.join('; '))}">sem critérios</span>`
+          : ticket.acceptance?.total ? `<span>${ticket.acceptance.done}/${ticket.acceptance.total}</span>` : ''}
         <span>${escapeHtml(ticket.priority)}</span>
       </span>
     </button>
@@ -133,6 +136,13 @@ async function loadBody(ticket) {
   return response.text();
 }
 
+function acceptanceLabel(ticket) {
+  const warnings = (ticket.warnings ?? []).map(warning => `<span class="warning-badge">${escapeHtml(warning)}</span>`).join(' ');
+  if (warnings) return warnings;
+  if (!ticket.acceptance) return '—';
+  return ticket.acceptance.total ? `${ticket.acceptance.done}/${ticket.acceptance.total} concluídos` : 'Seção sem checklist';
+}
+
 function showDetails(entities, id) {
   const ticket = entities.find(entity => entity.id === id);
   if (!ticket) return;
@@ -152,7 +162,7 @@ function showDetails(entities, id) {
       <div><dt>Labels</dt><dd>${ticket.labels.length ? ticket.labels.map(label => `<span class="label">${escapeHtml(label)}</span>`).join(' ') : '—'}</dd></div>
       <div><dt>Depende de</dt><dd>${entityLinks(entities, ticket.dependsOn, 'Nenhuma dependência')}</dd></div>
       <div><dt>Dependentes</dt><dd>${entityLinks(entities, dependents, 'Nenhum dependente')}</dd></div>
-      <div class="acceptance" hidden><dt>Critérios de aceite</dt><dd></dd></div>
+      <div><dt>Critérios de aceite</dt><dd>${acceptanceLabel(ticket)}</dd></div>
       <div><dt>Fonte</dt><dd><code>${escapeHtml(ticket.source || 'índice')}</code></dd></div>
     </dl>
     <article class="ticket-body" aria-live="polite"><p class="muted">Carregando conteúdo…</p></article>
@@ -170,14 +180,6 @@ function showDetails(entities, id) {
     if (source === null) {
       body.innerHTML = `<p class="muted">${escapeHtml(ticket.description) || 'Sem conteúdo.'}</p>`;
       return;
-    }
-    const progress = acceptanceProgress(source);
-    if (progress) {
-      const acceptance = details.querySelector('.acceptance');
-      acceptance.hidden = false;
-      acceptance.querySelector('dd').textContent = progress.total
-        ? `${progress.done}/${progress.total} concluídos`
-        : 'Seção sem checklist';
     }
     body.innerHTML = renderMarkdown(source) || '<p class="muted">Sem conteúdo.</p>';
   }).catch(error => {

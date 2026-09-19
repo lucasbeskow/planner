@@ -18,7 +18,7 @@ código entregue.
 
 ## Critérios de aceite
 
-- [ ] tickets sem critérios de aceite são apontados
+- [x] tickets sem critérios de aceite são apontados
 - [ ] especificações e decisões aparecem na UI
 - [ ] links e referências externas são validados
 - [ ] evidências de execução são registradas e projetadas

@@ -51,6 +51,7 @@ O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeç
 - navegação entre resumo e detalhes;
 - detalhe com corpo Markdown renderizado e progresso dos critérios de aceite;
 - navegação entre dependências e dependentes;
+- progresso dos critérios de aceite nos cards e destaque para tickets sem critérios;
 - visualização de labels e fonte Markdown;
 - mensagem orientativa quando o índice não pode ser carregado.
 

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { applyCreate, planCreate } = require('./core/create');
 const { applyEdit, planEdit } = require('./core/edit');
-const { buildIndex, contextFor, readEntities, validate, writeIndex } = require('./core/planner');
+const { buildIndex, contextFor, readEntities, validate, validationReport, writeIndex } = require('./core/planner');
 
 const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
@@ -150,15 +150,16 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
         break;
       }
       case 'validate': {
-        const errors = validate(entities);
-        if (errors.length) process.exitCode = 1;
+        // Avisos não mudam o código de saída: só erros tornam o plano inválido.
+        const report = validationReport(entities);
+        if (!report.valid) process.exitCode = 1;
         if (flags.has('--json')) {
-          output({ valid: errors.length === 0, errors, total: entities.length });
-        } else if (errors.length) {
-          console.error(errors.map(error => `✗ ${error}`).join('\n'));
-        } else {
-          output(`✓ ${entities.length} entidades válidas`);
+          output(report);
+          break;
         }
+        if (report.errors.length) console.error(report.errors.map(error => `✗ ${error}`).join('\n'));
+        else output(`✓ ${entities.length} entidades válidas`);
+        if (report.warnings.length) console.error(report.warnings.map(warning => `⚠ ${warning}`).join('\n'));
         break;
       }
       case 'new':

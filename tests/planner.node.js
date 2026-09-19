@@ -5,7 +5,7 @@ const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const util = require('node:util');
-const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
+const { acceptanceProgress, buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
 const { applyEdit, planEdit } = require('../core/edit');
 const { createPlannerServer } = require('../serve');
 
@@ -348,7 +348,7 @@ test('o índice contém os dados necessários para o dashboard', () => {
   assert.ok(index.repository.name);
   assert.ok(index.repository.initiative);
   assert.deepEqual(Object.keys(index.summary), ['total', 'draft', 'planned', 'inProgress', 'blocked', 'done', 'canceled']);
-  assert.deepEqual(Object.keys(ticket).sort(), ['dependsOn', 'description', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type']);
+  assert.deepEqual(Object.keys(ticket).sort(), ['acceptance', 'dependsOn', 'description', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type', 'warnings']);
 });
 
 test('a CLI expõe saída estruturada para agentes', () => {
@@ -370,9 +370,20 @@ test('a CLI valida com saída estruturada', () => {
   const invalidText = runCliIn(invalidFixtureRoot, 'validate');
 
   assert.equal(valid.status, 0);
-  assert.deepEqual(JSON.parse(valid.stdout), { valid: true, errors: [], total: 4 });
+  const missing = id => `${id}: sem seção Critérios de aceite`;
+  assert.deepEqual(JSON.parse(valid.stdout), {
+    valid: true,
+    errors: [],
+    warnings: [missing('FIX-002'), missing('FIX-003'), missing('FIX-004')],
+    total: 4
+  });
   assert.equal(invalid.status, 1);
-  assert.deepEqual(JSON.parse(invalid.stdout), { valid: false, errors: ['FIX-005: dependência inexistente FIX-999'], total: 5 });
+  assert.deepEqual(JSON.parse(invalid.stdout), {
+    valid: false,
+    errors: ['FIX-005: dependência inexistente FIX-999'],
+    warnings: [missing('FIX-002'), missing('FIX-003'), missing('FIX-004'), missing('FIX-005')],
+    total: 5
+  });
   assert.equal(invalidText.status, 1);
   assert.match(invalidText.stderr, /✗ FIX-005: dependência inexistente FIX-999/);
 });
@@ -513,7 +524,7 @@ test('CLI e MCP retornam o mesmo contrato de domínio', () => {
 });
 
 test('renderiza Markdown do detalhe escapando HTML', async () => {
-  const { acceptanceProgress, renderMarkdown } = await import('../markdown.mjs');
+  const { renderMarkdown } = await import('../markdown.mjs');
   const source = `---
 id: FIX-010
 ---
@@ -887,5 +898,47 @@ test('falha ao gravar o índice desfaz a escrita da entidade', () => {
     assert.deepEqual(fs.readdirSync(path.join(writeRoot, '.planner')).filter(file => file.endsWith('.tmp')), []);
   } finally {
     fs.rmSync(writeRoot, { recursive: true, force: true });
+  }
+});
+
+test('validate avisa sobre tasks sem critérios de aceite sem invalidar o plano', () => {
+  const warnRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-warn-'));
+  const write = (file, frontmatter, body) => {
+    const filePath = path.join(warnRoot, '.planner', file);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `---\n${frontmatter}\ndepends_on: []\n---\n\n${body}\n`);
+  };
+  try {
+    write('tickets/WRN-001.md', 'id: WRN-001\ntype: task\ntitle: Completo\nstatus: planned', '## Critérios de aceite\n\n- [x] um\n- [ ] dois');
+    write('tickets/WRN-002.md', 'id: WRN-002\ntype: task\ntitle: Sem seção\nstatus: in_progress', '## Objetivo\n\nTexto.');
+    write('tickets/WRN-003.md', 'id: WRN-003\ntype: task\ntitle: Sem checklist\nstatus: blocked', '### Critérios de aceite\n\nTexto solto.\n\n## Notas\n\n- [ ] fora');
+    write('tickets/WRN-004.md', 'id: WRN-004\ntype: task\ntitle: Rascunho\nstatus: draft', '');
+    write('tickets/WRN-005.md', 'id: WRN-005\ntype: task\ntitle: Cancelado\nstatus: canceled', '');
+    write('decisions/WRN-006.md', 'id: WRN-006\ntype: decision\ntitle: Decisão\nstatus: done', '## Decisão\n\nTexto.');
+
+    const json = runCliIn(warnRoot, 'validate', '--json');
+    assert.equal(json.status, 0);
+    assert.deepEqual(JSON.parse(json.stdout).warnings, [
+      'WRN-002: sem seção Critérios de aceite',
+      'WRN-003: Critérios de aceite sem itens de checklist'
+    ]);
+
+    const text = runCliIn(warnRoot, 'validate');
+    assert.equal(text.status, 0);
+    assert.match(text.stdout, /✓ 6 entidades válidas/);
+    assert.match(text.stderr, /⚠ WRN-002: sem seção Critérios de aceite/);
+
+    const index = buildIndex(warnRoot, readEntities(warnRoot));
+    const byId = id => index.tickets.find(ticket => ticket.id === id);
+    assert.deepEqual(byId('WRN-001').acceptance, { done: 1, total: 2 });
+    assert.deepEqual(byId('WRN-001').warnings, []);
+    assert.equal(byId('WRN-002').acceptance, null);
+    assert.deepEqual(byId('WRN-003').acceptance, { done: 0, total: 0 });
+    assert.deepEqual(byId('WRN-003').warnings, ['Critérios de aceite sem itens de checklist']);
+
+    const mcp = runMcp([{ jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'planner_validate', arguments: {} } }], warnRoot);
+    assert.deepEqual(JSON.parse(mcp.responses[0].result.content[0].text), JSON.parse(json.stdout));
+  } finally {
+    fs.rmSync(warnRoot, { recursive: true, force: true });
   }
 });

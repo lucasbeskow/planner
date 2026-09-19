@@ -232,6 +232,11 @@ projeção regenerável e não deve ser editado manualmente.
 `planner validate` e `planner_validate` detectam id ou título ausente, ids duplicados, tipos e
 status inválidos, `depends_on` que não seja lista, dependências inexistentes e ciclos.
 
+Também emitem avisos, que não tornam o plano inválido nem mudam o código de saída: tasks fora de
+`draft` e `canceled` sem seção `Critérios de aceite` ou com a seção sem itens de checklist. O
+índice projeta, por entidade, `acceptance` (`done`/`total` do checklist, ou `null` sem seção) e
+`warnings`; a UI mostra o progresso nos cards e destaca tickets com aviso.
+
 #### RF08 — Integração com agentes
 
 CLI e MCP retornam contratos equivalentes:
@@ -242,7 +247,7 @@ CLI e MCP retornam contratos equivalentes:
 | Listagem | `planner list [status] --json` | `planner_list` | Entidades filtráveis por status |
 | Detalhe | `planner show <id> --json` | `planner_show` | Metadados, corpo e fonte |
 | Contexto | `planner context <id> --json` | `planner_context` | Entidade, dependências, dependentes e validações |
-| Validação | `planner validate --json` | `planner_validate` | `valid`, erros e total de entidades |
+| Validação | `planner validate --json` | `planner_validate` | `valid`, erros, avisos e total de entidades |
 
 A escrita existe apenas na CLI (RF09); o MCP permanece somente leitura.
 
@@ -330,7 +335,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 50 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 51 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -365,8 +370,7 @@ Este contrato ainda é de processo: o runtime não valida nem projeta esses camp
 
 - mostrar grafo visual de dependências;
 - listar especificações e decisões recentes na UI;
-- validar links, critérios de aceite e referências externas;
-- apontar tickets sem critérios de aceite;
+- validar links e referências externas;
 - relacionar ticket, commit e pull request;
 - registrar e projetar evidências de execução.
 

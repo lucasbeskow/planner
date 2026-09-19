@@ -104,6 +104,26 @@ function summarize(body) {
   return paragraph ? paragraph.split('\n').map(line => line.trim()).join(' ') : '';
 }
 
+// Progresso do checklist da seção de critérios de aceite; null quando a seção não existe.
+function acceptanceProgress(body) {
+  const lines = String(body ?? '').split(/\r?\n/);
+  const start = lines.findIndex(line => /^#{1,6}\s+crit[ée]rios de aceite/i.test(line));
+  if (start < 0) return null;
+  const level = lines[start].match(/^#+/)[0].length;
+  let total = 0;
+  let done = 0;
+  for (const line of lines.slice(start + 1)) {
+    const heading = line.match(/^(#{1,6})\s/);
+    if (heading && heading[1].length <= level) break;
+    const task = line.match(/^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]/);
+    if (task) {
+      total += 1;
+      if (task[1] !== ' ') done += 1;
+    }
+  }
+  return { done, total };
+}
+
 function readConfig(root) {
   const configPath = path.join(root, '.planner', 'config.json');
   if (!fs.existsSync(configPath)) return { sources: DEFAULT_SOURCES, index: 'index.json' };
@@ -125,6 +145,7 @@ function readEntities(root) {
       ...parsed.attributes,
       dependsOn: parsed.attributes.depends_on ?? [],
       description: summarize(parsed.body),
+      acceptance: acceptanceProgress(parsed.body),
       body: parsed.body,
       filePath: path.relative(root, filePath)
     };
@@ -200,6 +221,24 @@ function validate(entities) {
   return validationIssues(entities).map(issue => issue.message);
 }
 
+// Avisos apontam lacunas de processo sem invalidar o plano. Só tasks em andamento ou
+// planejadas precisam de critérios; rascunhos e cancelados ficam de fora.
+function entityWarnings(entity) {
+  if (entity.type !== 'task' || ['draft', 'canceled'].includes(entity.status)) return [];
+  if (!entity.acceptance) return ['sem seção Critérios de aceite'];
+  if (!entity.acceptance.total) return ['Critérios de aceite sem itens de checklist'];
+  return [];
+}
+
+function warnings(entities) {
+  return entities.flatMap(entity => entityWarnings(entity).map(message => `${entity.id}: ${message}`));
+}
+
+function validationReport(entities) {
+  const errors = validate(entities);
+  return { valid: errors.length === 0, errors, warnings: warnings(entities), total: entities.length };
+}
+
 function summary(entities) {
   return entities.reduce((result, entity) => {
     result.total += 1;
@@ -246,6 +285,8 @@ function buildIndex(root, entities) {
       phase: entity.phase,
       labels: entity.labels || [],
       dependsOn: entity.dependsOn,
+      acceptance: entity.acceptance ?? null,
+      warnings: entityWarnings(entity),
       source: entity.filePath
     }))
   };
@@ -280,6 +321,7 @@ function contextFor(entities, id) {
 
 module.exports = {
   ALLOWED_STATUSES,
+  acceptanceProgress,
   ALLOWED_TYPES,
   buildIndex,
   contextFor,
@@ -291,5 +333,7 @@ module.exports = {
   summary,
   validate,
   validationIssues,
+  validationReport,
+  warnings,
   writeIndex
 };
