@@ -43,6 +43,9 @@ O servidor expõe somente as ferramentas `planner_status`, `planner_list`, `plan
 `planner_context` e `planner_validate`. A configuração do cliente deve apontar para o
 comando acima na raiz deste repositório.
 
+O workflow reutilizável dos agentes está em `.planner/skills/planner-workflow/`. Ele pode
+ser empacotado ou instalado no diretório de skills do agente escolhido.
+
 Cada ticket exibido pela UI informa também o caminho do arquivo que originou os dados.
 
 Para testar, sirva a raiz do repositório por HTTP e abra `/planner/`. A leitura do índice usa `fetch` e não funciona corretamente via `file://`.
