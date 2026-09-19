@@ -147,7 +147,7 @@ function summary(entities) {
 function buildIndex(root, entities) {
   let branch = 'unknown';
   try {
-    branch = execFileSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8' }).trim() || branch;
+    branch = execFileSync('git', ['branch', '--show-current'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim() || branch;
   } catch {
     // O Planner também pode ler uma cópia exportada sem uma pasta .git.
   }

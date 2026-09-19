@@ -3,7 +3,7 @@ const readline = require('node:readline');
 const path = require('node:path');
 const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(process.env.PLANNER_ROOT || path.join(__dirname, '..'));
 const serverInfo = { name: 'planner-local', version: '0.1.0' };
 
 const tools = [

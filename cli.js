@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(process.env.PLANNER_ROOT || path.join(__dirname, '..'));
 const rawArguments = process.argv.slice(2);
 const flags = new Set(rawArguments.filter(value => value.startsWith('--')));
 const positional = rawArguments.filter(value => !value.startsWith('--'));

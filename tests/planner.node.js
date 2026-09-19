@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs');
+const os = require('node:os');
 const path = require('node:path');
 const test = require('node:test');
 const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
@@ -9,13 +10,60 @@ const root = path.resolve(__dirname, '../..');
 const cliPath = path.join(root, 'planner/cli.js');
 const mcpPath = path.join(root, 'planner/mcp.js');
 
+// Os testes de comportamento usam um conjunto próprio de entidades, para não depender
+// da quantidade de tickets versionados nem do branch atual.
+const fixtureEntities = {
+  'initiatives/FIX-001-iniciativa.md': { id: 'FIX-001', type: 'initiative', status: 'in_progress', dependsOn: [] },
+  'tickets/FIX-002-planejado.md': { id: 'FIX-002', type: 'task', status: 'planned', dependsOn: ['FIX-001'] },
+  'tickets/FIX-003-concluido.md': { id: 'FIX-003', type: 'task', status: 'done', dependsOn: ['FIX-002'] },
+  'tickets/FIX-004-bloqueado.md': { id: 'FIX-004', type: 'task', status: 'blocked', dependsOn: [] }
+};
+
+function createFixture() {
+  const fixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-fixture-'));
+  for (const [file, entity] of Object.entries(fixtureEntities)) {
+    const filePath = path.join(fixtureRoot, '.planner', file);
+    const dependsOn = entity.dependsOn.length ? `depends_on:\n${entity.dependsOn.map(id => `  - ${id}`).join('\n')}` : 'depends_on: []';
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `---
+id: ${entity.id}
+type: ${entity.type}
+title: Entidade ${entity.id}
+status: ${entity.status}
+priority: medium
+phase: M0
+${dependsOn}
+labels:
+  - fixture
+---
+
+## Objetivo
+
+Descrição de ${entity.id}.
+`);
+  }
+  return fixtureRoot;
+}
+
+const fixtureRoot = createFixture();
+test.after(() => fs.rmSync(fixtureRoot, { recursive: true, force: true }));
+
 function runCli(...args) {
-  return spawnSync(process.execPath, [cliPath, ...args], { cwd: root, encoding: 'utf8' });
+  return spawnSync(process.execPath, [cliPath, ...args], {
+    cwd: root,
+    encoding: 'utf8',
+    env: { ...process.env, PLANNER_ROOT: fixtureRoot }
+  });
 }
 
 function runMcp(messages) {
   const input = `${messages.map(message => JSON.stringify(message)).join('\n')}\n`;
-  const processResult = spawnSync(process.execPath, [mcpPath], { cwd: root, input, encoding: 'utf8' });
+  const processResult = spawnSync(process.execPath, [mcpPath], {
+    cwd: root,
+    input,
+    encoding: 'utf8',
+    env: { ...process.env, PLANNER_ROOT: fixtureRoot }
+  });
   return { ...processResult, responses: processResult.stdout.trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) };
 }
 
@@ -62,13 +110,17 @@ test('rejeita frontmatter malformado com caminho do arquivo', () => {
   );
 });
 
-test('carrega as entidades versionadas do Planner', () => {
-  const entities = readEntities(root);
-  assert.equal(entities.length, 10);
-  assert.equal(entities.find(entity => entity.id === 'PLN-007').type, 'initiative');
+test('carrega as entidades de todas as fontes configuradas', () => {
+  const entities = readEntities(fixtureRoot);
+  const initiative = entities.find(entity => entity.id === 'FIX-001');
+
+  assert.equal(entities.length, Object.keys(fixtureEntities).length);
+  assert.equal(initiative.type, 'initiative');
+  assert.equal(initiative.filePath, '.planner/initiatives/FIX-001-iniciativa.md');
+  assert.deepEqual(entities.find(entity => entity.id === 'FIX-003').dependsOn, ['FIX-002']);
 });
 
-test('não encontra erros no conjunto inicial', () => {
+test('as entidades versionadas do Planner são válidas', () => {
   assert.deepEqual(validate(readEntities(root)), []);
 });
 
@@ -99,31 +151,32 @@ test('detecta dependência que não é uma lista', () => {
 });
 
 test('resolve dependências e dependentes no contexto', () => {
-  const context = contextFor(readEntities(root), 'PLN-009');
+  const context = contextFor(readEntities(fixtureRoot), 'FIX-002');
 
-  assert.equal(context.dependencies[0].id, 'PLN-008');
-  assert.equal(context.dependents.length, 0);
+  assert.deepEqual(context.dependencies.map(entity => entity.id), ['FIX-001']);
+  assert.deepEqual(context.dependents.map(entity => entity.id), ['FIX-003']);
 });
 
-test('o índice gerado permanece válido', () => {
+test('o índice versionado é consistente', () => {
   const index = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
+
   assert.equal(index.summary.total, index.tickets.length);
-  assert.equal(index.repository.branch, 'planner');
-  assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-003').source, '.planner/tickets/PLN-003-ler-markdown.md');
+  assert.ok(index.tickets.every(ticket => fs.existsSync(path.join(root, ticket.source))));
 });
 
 test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
-  const entities = readEntities(root);
-  const index = buildIndex(root, entities);
+  const entities = readEntities(fixtureRoot);
+  const index = buildIndex(fixtureRoot, entities);
 
   assert.equal(index.summary.total, entities.length);
-  assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-005').status, 'done');
-  assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-005').source, '.planner/tickets/PLN-005-fonte-de-verdade.md');
+  assert.deepEqual(index.summary, { total: 4, planned: 1, inProgress: 1, blocked: 1, done: 1 });
+  assert.equal(index.tickets.find(ticket => ticket.id === 'FIX-003').status, 'done');
+  assert.equal(index.tickets.find(ticket => ticket.id === 'FIX-003').source, '.planner/tickets/FIX-003-concluido.md');
 });
 
 test('o índice contém os dados necessários para o dashboard', () => {
-  const index = buildIndex(root, readEntities(root));
-  const ticket = index.tickets.find(item => item.id === 'PLN-002');
+  const index = buildIndex(fixtureRoot, readEntities(fixtureRoot));
+  const ticket = index.tickets.find(item => item.id === 'FIX-002');
 
   assert.ok(index.repository.name);
   assert.ok(index.repository.initiative);
@@ -135,14 +188,14 @@ test('o índice contém os dados necessários para o dashboard', () => {
 test('a CLI expõe saída estruturada para agentes', () => {
   const status = runCli('status', '--json');
   const list = runCli('list', 'planned', '--json');
-  const context = runCli('context', 'PLN-009', '--json');
+  const context = runCli('context', 'FIX-002', '--json');
 
   assert.equal(status.status, 0);
-  assert.equal(JSON.parse(status.stdout).total, 10);
+  assert.equal(JSON.parse(status.stdout).total, Object.keys(fixtureEntities).length);
   assert.equal(list.status, 0);
-  assert.ok(JSON.parse(list.stdout).every(entity => entity.status === 'planned'));
+  assert.deepEqual(JSON.parse(list.stdout).map(entity => entity.id), ['FIX-002']);
   assert.equal(context.status, 0);
-  assert.equal(JSON.parse(context.stdout).entity.id, 'PLN-009');
+  assert.equal(JSON.parse(context.stdout).entity.id, 'FIX-002');
 });
 
 test('a CLI oferece ajuda e erros acionáveis', () => {
@@ -164,7 +217,7 @@ test('o servidor MCP expõe ferramentas somente leitura', () => {
     { jsonrpc: '2.0', method: 'notifications/initialized' },
     { jsonrpc: '2.0', id: 2, method: 'tools/list' },
     { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'planner_status', arguments: {} } },
-    { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'planner_context', arguments: { id: 'PLN-009' } } }
+    { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'planner_context', arguments: { id: 'FIX-002' } } }
   ]);
 
   assert.equal(mcp.status, 0);
@@ -177,8 +230,8 @@ test('o servidor MCP expõe ferramentas somente leitura', () => {
     'planner_context',
     'planner_validate'
   ]);
-  assert.equal(JSON.parse(mcp.responses[2].result.content[0].text).total, 10);
-  assert.equal(JSON.parse(mcp.responses[3].result.content[0].text).entity.id, 'PLN-009');
+  assert.equal(JSON.parse(mcp.responses[2].result.content[0].text).total, Object.keys(fixtureEntities).length);
+  assert.equal(JSON.parse(mcp.responses[3].result.content[0].text).entity.id, 'FIX-002');
 });
 
 test('CLI e MCP retornam o mesmo contrato de domínio', () => {
