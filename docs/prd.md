@@ -174,6 +174,8 @@ arquivos Markdown em .planner/
 
 - `core/planner.js` concentra parser, leitura, resumo, projeção, contexto e validação;
 - `core/transitions.js` declara as transições de status permitidas;
+- `core/harness.js` lê os transcripts locais do Claude Code e calcula a janela e o consumo de um ticket;
+- `core/evidence.js` monta e grava a seção Evidência a partir do harness e dos valores informados;
 - `core/git.js` lê o histórico local com `git log`, sem shell e sem rede;
 - `core/references.js` extrai links, menções a ids e URLs externas do corpo, sem rede;
 - `core/create.js` gera novos tickets a partir de template, com o próximo id livre;
@@ -353,7 +355,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 55 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 57 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -371,13 +373,29 @@ verificados e a evidência de execução estiver registrada com:
 - `validation`: comandos, testes ou verificações executados;
 - limitações conhecidas, quando houver.
 
-A evidência fica no Markdown versionado do ticket ou em uma entidade referenciada por ele.
 Valores indisponíveis não devem ser inventados: usar `unknown` ou registrar a justificativa.
 A evidência fica na seção `## Evidência` (ou `Evidence`) do ticket, em itens `- campo: valor`
 (decisão PLN-017). `planner validate` avisa quando uma task `done` não tem a seção ou algum dos
 campos acima; tickets concluídos antes do contrato recebem o mesmo aviso e podem registrar
-`unknown`. O índice projeta `harness`, `model`, `effort`, `tokens` e `completed_at`, e a UI os
-mostra no detalhe; `validation` e limitações ficam só no Markdown.
+`unknown`. O índice projeta `harness`, `model`, `effort`, `tokens`, `tokens_cache_read` e
+`completed_at`, e a UI os mostra no detalhe; `validation` e limitações ficam só no Markdown.
+
+O agente não enxerga o próprio effort nem o consumo de tokens, então esses valores não devem ser
+declarados por ele. `planner evidence <id> validation="..."` os lê do harness:
+
+- no Claude Code, dos transcripts locais (`$CLAUDE_CONFIG_DIR` ou `~/.claude`, em
+  `projects/<raiz codificada>/*.jsonl`), que registram `effort`, modelo e `usage` por resposta;
+- a janela vai do primeiro `planner set <id> status=in_progress --yes` bem-sucedido ao último
+  `status=done`, ou até o momento do comando; `start=` e `end=` substituem a janela;
+- cada resposta é contada uma vez, mesmo repetida no transcript;
+- `tokens` soma input, output e criação de cache; `tokens_cache_read` fica separado, porque a
+  leitura de cache domina o total e não é comparável entre harnesses;
+- a seção também registra `started_at`, `sessions` e `source`, e preserva `validation`,
+  `limitações` e outros campos já existentes;
+- sem transcript (outro harness), o comando exige `harness`, `model`, `effort`, `tokens` e
+  `completed_at` explícitos, aceitando `unknown`.
+
+Como os outros comandos de escrita, `evidence` mostra o diff e grava só com `--yes`.
 
 ## 5. Roadmap
 
@@ -428,7 +446,6 @@ Ainda não há instrumentação no produto. Quando houver uso real, acompanhar:
 ## 8. Decisões em aberto
 
 - Objetivos: tipo `objective` próprio ou campo da iniciativa?
-- Como normalizar tokens quando harnesses reportam métricas incompatíveis?
 
 ## 9. Referências
 

@@ -1117,3 +1117,116 @@ test('grafo posiciona dependências à esquerda e destaca ciclos e ausentes', as
   assert.equal((svg.match(/class="graph-edge error"/g) ?? []).length, 3);
   assert.equal(renderGraph([]), '');
 });
+
+function writeTranscript(configDir, projectRoot, records) {
+  const directory = path.join(configDir, 'projects', path.resolve(projectRoot).replace(/[^A-Za-z0-9]/g, '-'));
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, 'sessao.jsonl'), `${records.map(record => JSON.stringify(record)).join('\n')}\n`);
+}
+
+function transcriptRecords() {
+  let counter = 0;
+  const assistant = (timestamp, messageId, usage, content = [], extra = {}) => ({
+    type: 'assistant', timestamp, sessionId: 'sessao-1', version: '9.9.9', effort: 'high',
+    message: { id: messageId, model: 'claude-teste', usage, content }, ...extra
+  });
+  const command = (timestamp, text, output = 'Gravado em arquivo; índice atualizado.') => {
+    counter += 1;
+    const id = `tool-${counter}`;
+    return [
+      assistant(timestamp, `msg-cmd-${counter}`, { input_tokens: 1, output_tokens: 1 }, [{ type: 'tool_use', id, name: 'Bash', input: { command: text } }]),
+      { type: 'user', timestamp, message: { content: [{ type: 'tool_result', tool_use_id: id, content: output }] } }
+    ];
+  };
+  const usage = { input_tokens: 10, output_tokens: 20, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000 };
+  return [
+    assistant('2026-01-01T09:00:00.000Z', 'antes', usage),
+    ...command('2026-01-01T09:30:00.000Z', 'PLANNER_ROOT=/outro node cli.js set FIX-002 status=in_progress --yes'),
+    ...command('2026-01-01T09:40:00.000Z', "cat > nota.md <<'X'\nnpx planner set FIX-002 status=in_progress --yes\nX", 'ok'),
+    ...command('2026-01-01T09:50:00.000Z', 'node cli.js set FIX-002 status=in_progress --yes', 'Erro: transição recusada'),
+    ...command('2026-01-01T10:00:00.000Z', 'cd /repo && npx planner set FIX-002 status=in_progress --yes | tail -1'),
+    assistant('2026-01-01T10:05:00.000Z', 'trabalho', usage),
+    assistant('2026-01-01T10:05:00.000Z', 'trabalho', usage),
+    assistant('2026-01-01T10:06:00.000Z', 'trabalho-2', usage, [], { effort: 'medium' }),
+    ...command('2026-01-01T10:10:00.000Z', 'npx planner set FIX-002 status=done --yes'),
+    assistant('2026-01-01T11:00:00.000Z', 'depois', usage)
+  ];
+}
+
+test('evidence calcula modelo, effort e tokens da janela do ticket nos transcripts', () => {
+  const evidenceRoot = createFixture();
+  const configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-claude-'));
+  const run = (...args) => spawnSync(process.execPath, [cliPath, ...args], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, PLANNER_ROOT: evidenceRoot, CLAUDE_CONFIG_DIR: configDir }
+  });
+  const ticketPath = path.join(evidenceRoot, '.planner/tickets/FIX-002-planejado.md');
+  try {
+    writeTranscript(configDir, evidenceRoot, transcriptRecords());
+    fs.appendFileSync(ticketPath, '\n## Evidência\n\n- harness: Claude Code\n- tokens: unknown\n- validation: `npm test`\n\n## Notas\n\nFim.\n');
+
+    const preview = JSON.parse(run('evidence', 'FIX-002', '--json').stdout);
+    assert.equal(preview.written, false);
+    assert.equal(preview.derived, true);
+    // Duas mensagens de comando (in_progress e done) + trabalho + trabalho-2; "trabalho" repetido conta uma vez.
+    assert.deepEqual(preview.evidence, {
+      harness: 'Claude Code 9.9.9',
+      model: 'claude-teste',
+      effort: 'high, medium',
+      tokens: String(2 * 130 + 2 * 2),
+      tokens_cache_read: String(2 * 1000),
+      started_at: '2026-01-01T10:00:00.000Z',
+      completed_at: '2026-01-01T10:10:00.000Z',
+      sessions: 'sessao-1',
+      source: 'transcripts do Claude Code (4 respostas)',
+      validation: '`npm test`'
+    });
+    assert.doesNotMatch(fs.readFileSync(ticketPath, 'utf8'), /effort/);
+
+    const written = run('evidence', 'FIX-002', 'limitações=janela única', '--yes');
+    assert.equal(written.status, 0, written.stderr);
+    const content = fs.readFileSync(ticketPath, 'utf8');
+    assert.match(content, /## Evidência\n\n- harness: Claude Code 9\.9\.9\n- model: claude-teste\n- effort: high, medium\n/);
+    assert.match(content, /- validation: `npm test`\n- limitações: janela única\n\n## Notas\n\nFim\.\n$/);
+    assert.equal(JSON.parse(fs.readFileSync(path.join(evidenceRoot, '.planner/index.json'), 'utf8'))
+      .tickets.find(ticket => ticket.id === 'FIX-002').evidence.tokens_cache_read, '2000');
+
+    const windowed = JSON.parse(run('evidence', 'FIX-002', 'start=2026-01-01T07:00:00-03:00', 'end=2026-01-01T10:05:30Z', '--json').stdout);
+    assert.equal(windowed.evidence.started_at, '2026-01-01T10:00:00.000Z');
+    assert.equal(windowed.evidence.source, 'transcripts do Claude Code (2 respostas)');
+  } finally {
+    fs.rmSync(evidenceRoot, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+  }
+});
+
+test('evidence sem transcript exige os campos do contrato', () => {
+  const evidenceRoot = createFixture();
+  const configDir = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-claude-'));
+  const run = (...args) => spawnSync(process.execPath, [cliPath, ...args], {
+    cwd: root, encoding: 'utf8', env: { ...process.env, PLANNER_ROOT: evidenceRoot, CLAUDE_CONFIG_DIR: configDir }
+  });
+  try {
+    const refused = run('evidence', 'FIX-003', 'validation=npm test', '--yes');
+    assert.equal(refused.status, 1);
+    assert.match(refused.stderr, /não há transcript do Claude Code para este repositório; informe harness= model= effort= tokens= completed_at=/);
+
+    const manual = run('evidence', 'FIX-003', 'harness=Codex', 'model=gpt-teste', 'effort=unknown', 'tokens=unknown',
+      'completed_at=2026-01-02', 'validation=npm test', '--yes', '--json');
+    assert.equal(manual.status, 0, manual.stderr);
+    assert.equal(JSON.parse(manual.stdout).derived, false);
+    assert.match(fs.readFileSync(path.join(evidenceRoot, '.planner/tickets/FIX-003-concluido.md'), 'utf8'),
+      /\n## Evidência\n\n- harness: Codex\n- model: gpt-teste\n- effort: unknown\n- tokens: unknown\n- completed_at: 2026-01-02\n- validation: npm test\n$/);
+
+    const withoutStart = createFixture();
+    writeTranscript(configDir, withoutStart, [{ type: 'assistant', timestamp: '2026-01-01T00:00:00Z', message: { id: 'x', model: 'm', usage: { input_tokens: 1 } } }]);
+    const noStart = spawnSync(process.execPath, [cliPath, 'evidence', 'FIX-002'], {
+      cwd: root, encoding: 'utf8', env: { ...process.env, PLANNER_ROOT: withoutStart, CLAUDE_CONFIG_DIR: configDir }
+    });
+    assert.equal(noStart.status, 1);
+    assert.match(noStart.stderr, /não encontrei o início de FIX-002 .* informe start=<data ISO>/);
+    fs.rmSync(withoutStart, { recursive: true, force: true });
+  } finally {
+    fs.rmSync(evidenceRoot, { recursive: true, force: true });
+    fs.rmSync(configDir, { recursive: true, force: true });
+  }
+});

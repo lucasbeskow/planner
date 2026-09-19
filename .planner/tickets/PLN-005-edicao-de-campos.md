@@ -25,10 +25,14 @@ o diff antes de gravar.
 
 ## Evidência
 
-- harness: Claude Code
+- harness: Claude Code 2.1.278
 - model: claude-opus-5
-- effort: unknown
-- tokens: unknown
-- completed_at: 2026-09-19
+- effort: medium
+- tokens: 43784
+- tokens_cache_read: 1311333
+- started_at: 2026-09-19T20:01:57.000Z
+- completed_at: 2026-09-19T20:05:00.884Z
+- sessions: e5c917b0-63f6-412d-a178-80348d1f850e
+- source: transcripts do Claude Code (13 respostas)
 - validation: `npm test` (42 cenários passando, 6 novos para `set` e `applyEdit`), `npx planner validate`; este ticket foi fechado com `npx planner set PLN-005 status=done --yes`
-- limitações: o índice não é regenerado pelo `set` (PLN-008); transições não são validadas (PLN-007)
+- limitações: o índice não é regenerado pelo `set` (PLN-008); transições não são validadas (PLN-007); o ticket não passou por in_progress: o início é o commit 8bdc9d0, que fechou o M0

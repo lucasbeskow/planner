@@ -4,12 +4,12 @@
     "initiative": "Planner local — do M0 à edição segura"
   },
   "summary": {
-    "total": 17,
+    "total": 18,
     "draft": 0,
     "planned": 1,
     "inProgress": 1,
     "blocked": 0,
-    "done": 15,
+    "done": 16,
     "canceled": 0
   },
   "tickets": [
@@ -54,11 +54,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "76216",
+        "tokens_cache_read": "1170655",
+        "completed_at": "2026-09-19T20:01:57.000Z"
       },
       "warnings": [],
       "errors": [],
@@ -83,11 +84,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "76216",
+        "tokens_cache_read": "1170655",
+        "completed_at": "2026-09-19T20:01:57.000Z"
       },
       "warnings": [],
       "errors": [],
@@ -112,11 +114,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "76216",
+        "tokens_cache_read": "1170655",
+        "completed_at": "2026-09-19T20:01:57.000Z"
       },
       "warnings": [],
       "errors": [],
@@ -142,11 +145,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "43784",
+        "tokens_cache_read": "1311333",
+        "completed_at": "2026-09-19T20:05:00.884Z"
       },
       "warnings": [],
       "errors": [],
@@ -172,11 +176,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "27050",
+        "tokens_cache_read": "1058535",
+        "completed_at": "2026-09-19T20:17:00.600Z"
       },
       "warnings": [],
       "errors": [],
@@ -202,11 +207,12 @@
         "total": 2
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "13326",
+        "tokens_cache_read": "476311",
+        "completed_at": "2026-09-19T20:11:46.257Z"
       },
       "warnings": [],
       "errors": [],
@@ -233,11 +239,12 @@
         "total": 2
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "15050",
+        "tokens_cache_read": "1190000",
+        "completed_at": "2026-09-19T20:24:28.427Z"
       },
       "warnings": [],
       "errors": [],
@@ -259,11 +266,12 @@
       ],
       "acceptance": null,
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "76216",
+        "tokens_cache_read": "1170655",
+        "completed_at": "2026-09-19T20:01:57.000Z"
       },
       "warnings": [],
       "errors": [],
@@ -309,11 +317,12 @@
         "total": 4
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "175564",
+        "tokens_cache_read": "1862264",
+        "completed_at": "2026-09-19T20:39:43.229Z"
       },
       "warnings": [],
       "errors": [],
@@ -338,11 +347,12 @@
         "total": 2
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "29532",
+        "tokens_cache_read": "2492294",
+        "completed_at": "2026-09-19T20:56:46.139Z"
       },
       "warnings": [],
       "errors": [],
@@ -367,11 +377,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "26347",
+        "tokens_cache_read": "2144042",
+        "completed_at": "2026-09-19T20:57:01.219Z"
       },
       "warnings": [],
       "errors": [],
@@ -397,11 +408,12 @@
         "total": 3
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "20829",
+        "tokens_cache_read": "2544747",
+        "completed_at": "2026-09-19T21:01:52.586Z"
       },
       "warnings": [],
       "errors": [],
@@ -426,11 +438,12 @@
         "total": 2
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "11219",
+        "tokens_cache_read": "889221",
+        "completed_at": "2026-09-19T21:10:36.213Z"
       },
       "warnings": [],
       "errors": [],
@@ -455,11 +468,12 @@
         "total": 2
       },
       "evidence": {
-        "harness": "Claude Code",
+        "harness": "Claude Code 2.1.278",
         "model": "claude-opus-5",
-        "effort": "unknown",
-        "tokens": "unknown",
-        "completed_at": "2026-09-19"
+        "effort": "medium",
+        "tokens": "39035",
+        "tokens_cache_read": "3571904",
+        "completed_at": "2026-09-19T21:15:13.351Z"
       },
       "warnings": [],
       "errors": [],
@@ -484,6 +498,37 @@
       "warnings": [],
       "errors": [],
       "source": ".planner/decisions/PLN-017-evidencia-de-execucao-fica-em-secao-do-ticket.md"
+    },
+    {
+      "id": "PLN-018",
+      "type": "task",
+      "title": "Coletar evidência de execução do harness",
+      "description": "Preencher a seção Evidência com modelo, effort e tokens lidos do harness, em vez de depender de o agente declarar valores que ele não enxerga.",
+      "status": "done",
+      "priority": "high",
+      "phase": "M2",
+      "labels": [
+        "evidencia",
+        "cli"
+      ],
+      "dependsOn": [
+        "PLN-014"
+      ],
+      "acceptance": {
+        "done": 6,
+        "total": 6
+      },
+      "evidence": {
+        "harness": "Claude Code 2.1.278",
+        "model": "claude-opus-5",
+        "effort": "medium",
+        "tokens": "42256",
+        "tokens_cache_read": "3325336",
+        "completed_at": "2026-09-19T21:42:05.662Z"
+      },
+      "warnings": [],
+      "errors": [],
+      "source": ".planner/tickets/PLN-018-coletar-evidencia-de-execucao-do-harness.md"
     }
   ]
 }

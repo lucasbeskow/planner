@@ -312,7 +312,7 @@ function initiativeTitle(entities, config) {
 // O índice leva só os campos curtos da evidência; validação e limitações ficam no Markdown.
 function projectEvidence(evidence) {
   if (!evidence) return null;
-  const fields = ['harness', 'model', 'effort', 'tokens', 'completed_at'];
+  const fields = ['harness', 'model', 'effort', 'tokens', 'tokens_cache_read', 'completed_at'];
   return Object.fromEntries(fields.filter(field => evidence[field]).map(field => [field, evidence[field]]));
 }
 

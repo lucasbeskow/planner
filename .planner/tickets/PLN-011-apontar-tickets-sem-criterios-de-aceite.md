@@ -25,10 +25,14 @@ feche o trabalho.
 
 ## Evidência
 
-- harness: Claude Code
+- harness: Claude Code 2.1.278
 - model: claude-opus-5
-- effort: unknown
-- tokens: unknown
-- completed_at: 2026-09-19
+- effort: medium
+- tokens: 175564
+- tokens_cache_read: 1862264
+- started_at: 2026-09-19T20:36:10.082Z
+- completed_at: 2026-09-19T20:39:43.229Z
+- sessions: e5c917b0-63f6-412d-a178-80348d1f850e
+- source: transcripts do Claude Code (12 respostas)
 - validation: `npm test` (51 cenários passando, 1 novo cobrindo avisos na CLI, no MCP e no índice), `npx planner validate`; UI conferida no Chrome (progresso nos cards e no detalhe)
 - limitações: o destaque visual de ticket sem critérios foi verificado só por teste do índice, porque a fixture versionada não tem tickets sem critérios

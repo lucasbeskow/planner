@@ -47,6 +47,18 @@ npx planner new "Título do ticket" priority=high depends_on=PLN-005   # só mos
 npx planner new "Título do ticket" priority=high depends_on=PLN-005 --yes
 ```
 
+Ao concluir, registre a evidência lida do harness em vez de escrevê-la à mão:
+
+```bash
+npx planner evidence PLN-005 validation="npm test (57 cenários)"         # só mostra o diff
+npx planner evidence PLN-005 validation="npm test (57 cenários)" --yes
+npx planner set PLN-005 status=done --yes
+```
+
+No Claude Code, modelo, effort e tokens vêm dos transcripts locais, na janela entre
+`status=in_progress` e a conclusão. Em outros harnesses, informe `harness=`, `model=`,
+`effort=`, `tokens=` e `completed_at=`.
+
 Transições fora do fluxo, como concluir um ticket com dependências abertas, são recusadas com
 os motivos. Use `--force` somente quando o usuário pedir para reabrir ou pular uma etapa.
 

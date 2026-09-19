@@ -106,6 +106,17 @@ O id é o próximo livre do prefixo em uso (ou de `idPrefix`). O corpo vem de
 `Objetivo` e `Critérios de aceite`. Templates contêm só o corpo e aceitam `{{id}}`, `{{title}}`
 e `{{type}}`.
 
+Para registrar a evidência de execução ao concluir um ticket:
+
+```bash
+npx planner evidence PLN-005 validation="npm test"
+npx planner evidence PLN-005 validation="npm test" --yes
+```
+
+No Claude Code, `harness`, `model`, `effort`, `tokens` (input + output + criação de cache) e
+`tokens_cache_read` são lidos dos transcripts locais, na janela entre `status=in_progress` e a
+conclusão. Fora dele, informe esses campos explicitamente.
+
 Mudanças de status seguem `draft → planned → in_progress → done`, com `blocked` a partir de
 `in_progress` e `canceled` a partir de qualquer status não final. `done` exige dependências
 concluídas ou canceladas. Quando a transição é recusada, a CLI lista os motivos; `--force`

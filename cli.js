@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { applyCreate, planCreate } = require('./core/create');
 const { applyEdit, planEdit } = require('./core/edit');
+const { planEvidence } = require('./core/evidence');
 const { buildIndex, contextFor, readEntities, validate, validationReport, writeIndex } = require('./core/planner');
 
 const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
@@ -29,6 +30,10 @@ Comandos:
   new <título> [campo=valor]...
                          mostra o arquivo de um novo ticket a partir do
                          template; grava somente com --yes
+  evidence <id> [campo=valor]...
+                         preenche a seção Evidência com modelo, effort e
+                         tokens dos transcripts do Claude Code; grava
+                         somente com --yes
   index                  regenera o índice derivado
   help, -h, --help       mostra esta ajuda
 
@@ -38,6 +43,9 @@ concluídas ou canceladas; iniciativas não contam como dependência.
 Em new, os campos aceitos são type, status, priority, phase, labels e depends_on
 (listas separadas por vírgula). O template vem de .planner/templates/<type>.md,
 .planner/templates/default.md ou do padrão embutido.
+Em evidence, informe validation=... e, se quiser, limitações=...; start= e end=
+(datas ISO) substituem a janela encontrada nos transcripts. Sem transcript,
+harness, model, effort e tokens precisam ser informados (unknown é aceito).
 Em set, labels aceita labels=a,b (substitui), labels+=a e labels-=a.
 
 --json retorna dados estruturados para agentes e scripts.
@@ -64,6 +72,23 @@ function setCommand() {
     output({ id: plan.id, file: plan.file, changes: plan.changes, diff: plan.diff, written: write, indexed: write });
   } else if (!plan.changes.length) {
     output(`${plan.id}: nenhuma alteração; os valores já estão aplicados`);
+  } else {
+    output(`${plan.diff}\n\n${write
+      ? `Gravado em ${plan.file}; índice atualizado.`
+      : 'Nenhuma alteração gravada. Repita com --yes para gravar.'}`);
+  }
+}
+
+// Evidência vem do harness quando possível; o agente só informa o que o harness não sabe.
+function evidenceCommand() {
+  const plan = planEvidence(root, argument, rest);
+  const write = flags.has('--yes') && plan.changed;
+  if (write) applyEdit(root, plan);
+
+  if (flags.has('--json')) {
+    output({ id: plan.id, file: plan.file, evidence: plan.evidence, derived: plan.derived, diff: plan.diff, written: write });
+  } else if (!plan.changed) {
+    output(`${plan.id}: evidência já registrada com estes valores`);
   } else {
     output(`${plan.diff}\n\n${write
       ? `Gravado em ${plan.file}; índice atualizado.`
@@ -164,6 +189,9 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
       }
       case 'new':
         newCommand();
+        break;
+      case 'evidence':
+        evidenceCommand();
         break;
       case 'set':
         setCommand();
