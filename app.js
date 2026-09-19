@@ -1,3 +1,4 @@
+import { renderGraph } from './graph.mjs';
 import { escapeHtml, renderMarkdown } from './markdown.mjs';
 
 // Status opcionais só ganham card e coluna quando existe algum item neles.
@@ -116,11 +117,27 @@ function render(data, branch) {
           `).join('')}
         </div>
       </section>
+
+      <details class="graph-panel" open>
+        <summary>
+          <span><span class="eyebrow">relações</span><strong>Grafo de dependências</strong></span>
+          <span class="muted">cada entidade fica à direita do que ela depende</span>
+        </summary>
+        <div class="graph-scroll">${renderGraph(entities)}</div>
+      </details>
     </main>
   `;
 
   app.querySelectorAll('[data-ticket]').forEach(card => {
     card.addEventListener('click', () => showDetails(entities, card.dataset.ticket));
+    // Nós do grafo não são <button>; Enter e espaço precisam abrir o detalhe também.
+    if (card.tagName !== 'BUTTON') {
+      card.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        showDetails(entities, card.dataset.ticket);
+      });
+    }
   });
 }
 

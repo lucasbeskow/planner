@@ -23,4 +23,4 @@ código entregue.
 - [x] links e referências externas são validados
 - [x] evidências de execução são registradas e projetadas
 - [x] tickets se relacionam com commits e pull requests
-- [ ] dependências podem ser vistas como grafo
+- [x] dependências podem ser vistas como grafo

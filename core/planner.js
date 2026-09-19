@@ -318,6 +318,9 @@ function projectEvidence(evidence) {
 
 function buildIndex(root, entities) {
   const config = readConfig(root);
+  // Erros de validação por entidade, para a UI destacar ciclos e dependências inexistentes.
+  const issues = validationIssues(entities);
+  const errorsFor = id => issues.filter(issue => issue.ids.includes(id)).map(issue => issue.message);
   // O branch não entra na projeção versionada: ele mudaria o arquivo conforme o branch que o gerou.
   const repository = {
     name: repositoryName(root, config),
@@ -339,6 +342,7 @@ function buildIndex(root, entities) {
       acceptance: entity.acceptance ?? null,
       evidence: projectEvidence(entity.evidence),
       warnings: entityWarnings(entity),
+      errors: errorsFor(entity.id),
       source: entity.filePath
     }))
   };

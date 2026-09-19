@@ -348,7 +348,7 @@ test('o índice contém os dados necessários para o dashboard', () => {
   assert.ok(index.repository.name);
   assert.ok(index.repository.initiative);
   assert.deepEqual(Object.keys(index.summary), ['total', 'draft', 'planned', 'inProgress', 'blocked', 'done', 'canceled']);
-  assert.deepEqual(Object.keys(ticket).sort(), ['acceptance', 'dependsOn', 'description', 'evidence', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type', 'warnings']);
+  assert.deepEqual(Object.keys(ticket).sort(), ['acceptance', 'dependsOn', 'description', 'errors', 'evidence', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type', 'warnings']);
 });
 
 test('a CLI expõe saída estruturada para agentes', () => {
@@ -1091,4 +1091,29 @@ test('context relaciona commits locais e pull requests citados', () => {
   } finally {
     fs.rmSync(gitRoot, { recursive: true, force: true });
   }
+});
+
+test('grafo posiciona dependências à esquerda e destaca ciclos e ausentes', async () => {
+  const { graphLayout, renderGraph } = await import('../graph.mjs');
+  const entities = [
+    { id: 'GRF-001', title: 'Raiz', status: 'done', dependsOn: [], errors: [] },
+    { id: 'GRF-002', title: 'Depende da raiz <b>', status: 'planned', dependsOn: ['GRF-001'], errors: [] },
+    { id: 'GRF-003', title: 'Ciclo A', status: 'planned', dependsOn: ['GRF-004'], errors: ['ciclo de dependências: GRF-003 -> GRF-004 -> GRF-003'] },
+    { id: 'GRF-004', title: 'Ciclo B', status: 'planned', dependsOn: ['GRF-003', 'GRF-404'], errors: ['ciclo de dependências: GRF-003 -> GRF-004 -> GRF-003', 'GRF-004: dependência inexistente GRF-404'] }
+  ];
+  const layout = graphLayout(entities);
+  const node = id => layout.nodes.find(item => item.id === id);
+  assert.ok(node('GRF-002').x > node('GRF-001').x);
+  assert.equal(node('GRF-404').missing, true);
+  assert.deepEqual(
+    layout.edges.map(edge => [edge.from.id, edge.to.id, edge.error]),
+    [['GRF-001', 'GRF-002', false], ['GRF-004', 'GRF-003', true], ['GRF-003', 'GRF-004', true], ['GRF-404', 'GRF-004', true]]
+  );
+
+  const svg = renderGraph(entities);
+  assert.match(svg, /data-ticket="GRF-001"/);
+  assert.doesNotMatch(svg, /data-ticket="GRF-404"/);
+  assert.match(svg, /Depende da raiz &lt;b&gt;/);
+  assert.equal((svg.match(/class="graph-edge error"/g) ?? []).length, 3);
+  assert.equal(renderGraph([]), '');
 });

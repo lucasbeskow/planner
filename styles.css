@@ -80,4 +80,27 @@ dd { margin: 0; font-size: .85rem; }
 .ticket-body blockquote { border-left: 3px solid var(--border); color: var(--muted); padding-left: 12px; }
 .ticket-body a { color: var(--blue); }
 .ticket-body hr { border: 0; border-top: 1px solid var(--border); }
+.graph-panel { background: rgba(25, 28, 35, .55); border: 1px solid var(--border); border-radius: 14px; margin-top: 24px; padding: 20px 24px; }
+.graph-panel summary { align-items: center; cursor: pointer; display: flex; gap: 16px; justify-content: space-between; list-style: none; }
+.graph-panel summary::-webkit-details-marker { display: none; }
+.graph-panel summary > span:first-child { display: grid; gap: 4px; }
+.graph-panel summary strong { font-size: 1.5rem; letter-spacing: -0.03em; }
+.graph-scroll { margin-top: 20px; overflow-x: auto; }
+.graph { display: block; }
+.graph-edge { fill: none; stroke: var(--border); stroke-width: 1.5; }
+.graph-edge.error { stroke: var(--red); stroke-dasharray: 5 4; stroke-width: 2; }
+.graph-arrow { fill: var(--muted); }
+.graph-arrow.error { fill: var(--red); }
+.graph-node rect { fill: var(--surface); stroke: var(--blue); stroke-width: 1.5; }
+.graph-node[data-ticket] { cursor: pointer; }
+.graph-node[data-ticket]:hover rect, .graph-node[data-ticket]:focus-visible rect { fill: var(--surface-hover); }
+.graph-node:focus { outline: none; }
+.graph-node.status-in_progress rect { stroke: var(--green); }
+.graph-node.status-done rect { stroke: var(--yellow); }
+.graph-node.status-blocked rect, .graph-node.error rect { stroke: var(--red); }
+.graph-node.status-draft rect, .graph-node.status-canceled rect { stroke: var(--muted); }
+.graph-node.error rect { stroke-width: 2.5; }
+.graph-node.graph-missing rect { fill: transparent; stroke-dasharray: 5 4; }
+.graph-id { fill: var(--muted); font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.graph-title { fill: var(--text); font-size: 12px; }
 @media (max-width: 800px) { .shell { width: min(100% - 28px, 680px); padding-top: 28px; } .topbar { display: grid; } .summary-grid { grid-template-columns: repeat(2, 1fr); } .board { grid-template-columns: repeat(var(--columns, 4), 250px); } }

@@ -88,7 +88,6 @@ ferramentas de revisão ou deploy.
 Fora do escopo do MVP:
 
 - editar entidades pela UI ou pelo MCP (a CLI edita campos com `planner set`, no M1);
-- grafo visual de dependências;
 - sincronizar automaticamente com Linear, GitHub, GitLab ou outro SaaS;
 - editar código, fazer deploy ou executar comandos sem confirmação;
 - autenticação, colaboração em tempo real, notificações, editor WYSIWYG ou banco remoto.
@@ -183,6 +182,7 @@ arquivos Markdown em .planner/
 - `mcp.js` adapta o mesmo domínio ao protocolo MCP por stdio;
 - `serve.js` serve a UI e os arquivos mínimos necessários para a leitura local;
 - `app.js` renderiza a projeção, o branch atual e o painel de detalhes no navegador;
+- `graph.mjs` desenha o grafo de dependências em SVG, sem dependências externas;
 - `markdown.mjs` renderiza o corpo Markdown do detalhe, sem dependências, escapando HTML;
 - `tests/planner.node.js` verifica os contratos observáveis.
 
@@ -227,7 +227,11 @@ dependentes, as validações relacionadas e `commits`: os commits do histórico 
 o id no assunto ou no corpo (com hash, autor, data, assunto e números de pull request lidos do
 assunto, como `(#12)` ou `Merge pull request #12`). Nada é consultado na rede; sem Git,
 `commits` é `null`. Para que a relação funcione, as mensagens de commit devem citar o id. A UI lista dependências e dependentes como links que
-abrem o detalhe da entidade; ids ausentes do índice aparecem destacados. Não há grafo visual.
+abrem o detalhe da entidade; ids ausentes do índice aparecem destacados. A UI também desenha o
+grafo de todas as entidades em SVG, sem dependências externas: cada entidade fica à direita do
+que ela depende, dependências inexistentes viram nós tracejados e arestas de ciclos ou para ids
+ausentes ficam em vermelho. O índice projeta os erros de validação de cada entidade (`errors`)
+para esse destaque, e cada nó abre o detalhe pelo clique ou pelo teclado.
 
 #### RF06 — Fonte de verdade
 
@@ -349,7 +353,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 54 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 55 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -384,9 +388,11 @@ mostra no detalhe; `validation` e limitações ficam só no Markdown.
 - validar transições antes de salvar;
 - atualizar o índice automaticamente após escrita autorizada.
 
-### M2 — contexto de engenharia
+### M2 — contexto de engenharia (concluído)
 
-- mostrar grafo visual de dependências;
+- critérios de aceite, links e evidências validados como avisos;
+- especificações, decisões e grafo de dependências na UI;
+- commits locais que citam o id em `planner context`.
 
 ### M3 — integrações opcionais
 
