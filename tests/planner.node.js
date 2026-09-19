@@ -348,7 +348,7 @@ test('o índice contém os dados necessários para o dashboard', () => {
   assert.ok(index.repository.name);
   assert.ok(index.repository.initiative);
   assert.deepEqual(Object.keys(index.summary), ['total', 'draft', 'planned', 'inProgress', 'blocked', 'done', 'canceled']);
-  assert.deepEqual(Object.keys(ticket).sort(), ['acceptance', 'dependsOn', 'description', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type', 'warnings']);
+  assert.deepEqual(Object.keys(ticket).sort(), ['acceptance', 'dependsOn', 'description', 'evidence', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type', 'warnings']);
 });
 
 test('a CLI expõe saída estruturada para agentes', () => {
@@ -374,14 +374,14 @@ test('a CLI valida com saída estruturada', () => {
   assert.deepEqual(JSON.parse(valid.stdout), {
     valid: true,
     errors: [],
-    warnings: [missing('FIX-002'), missing('FIX-003'), missing('FIX-004')],
+    warnings: [missing('FIX-002'), missing('FIX-003'), 'FIX-003: concluído sem seção Evidência', missing('FIX-004')],
     total: 4
   });
   assert.equal(invalid.status, 1);
   assert.deepEqual(JSON.parse(invalid.stdout), {
     valid: false,
     errors: ['FIX-005: dependência inexistente FIX-999'],
-    warnings: [missing('FIX-002'), missing('FIX-003'), missing('FIX-004'), missing('FIX-005')],
+    warnings: [missing('FIX-002'), missing('FIX-003'), 'FIX-003: concluído sem seção Evidência', missing('FIX-004'), missing('FIX-005')],
     total: 5
   });
   assert.equal(invalidText.status, 1);
@@ -1001,5 +1001,62 @@ Fonte: [RFC](https://www.rfc-editor.org/rfc/rfc9110) e <https://exemplo.com/a>, 
     ]);
   } finally {
     fs.rmSync(refRoot, { recursive: true, force: true });
+  }
+});
+
+test('evidência de execução é lida, validada e projetada', () => {
+  const evidenceRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'planner-evidence-'));
+  const write = (id, status, extra) => {
+    const filePath = path.join(evidenceRoot, `.planner/tickets/${id}.md`);
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, `---\nid: ${id}\ntype: task\ntitle: ${id}\nstatus: ${status}\ndepends_on: []\n---\n\n## Critérios de aceite\n\n- [x] feito\n${extra}`);
+  };
+  try {
+    write('EVD-001', 'done', `
+## Evidência
+
+- harness: Claude Code
+- model: claude-opus-5
+- effort: unknown
+- tokens: 12000
+- completed_at: 2026-09-19
+- validation: \`npm test\`
+- limitações: nenhuma
+
+## Notas
+
+- harness: fora da seção
+`);
+    write('EVD-002', 'done', '');
+    write('EVD-003', 'done', '\n## Evidence\n\n- harness: Codex\n- completed_at: 2026-09-18\n');
+    write('EVD-004', 'in_progress', '');
+
+    const entities = readEntities(evidenceRoot);
+    const byId = id => entities.find(entity => entity.id === id);
+    assert.deepEqual(byId('EVD-001').evidence, {
+      harness: 'Claude Code',
+      model: 'claude-opus-5',
+      effort: 'unknown',
+      tokens: '12000',
+      completed_at: '2026-09-19',
+      validation: '`npm test`',
+      limitações: 'nenhuma'
+    });
+    assert.equal(byId('EVD-002').evidence, null);
+
+    const report = JSON.parse(runCliIn(evidenceRoot, 'validate', '--json').stdout);
+    assert.equal(report.valid, true);
+    assert.deepEqual(report.warnings, [
+      'EVD-002: concluído sem seção Evidência',
+      'EVD-003: Evidência sem model, effort, tokens, validation'
+    ]);
+
+    const index = buildIndex(evidenceRoot, entities);
+    assert.deepEqual(index.tickets.find(ticket => ticket.id === 'EVD-001').evidence, {
+      harness: 'Claude Code', model: 'claude-opus-5', effort: 'unknown', tokens: '12000', completed_at: '2026-09-19'
+    });
+    assert.equal(index.tickets.find(ticket => ticket.id === 'EVD-004').evidence, null);
+  } finally {
+    fs.rmSync(evidenceRoot, { recursive: true, force: true });
   }
 });

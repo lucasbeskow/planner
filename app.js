@@ -166,6 +166,13 @@ function acceptanceLabel(ticket) {
   return ticket.acceptance.total ? `${ticket.acceptance.done}/${ticket.acceptance.total} concluídos` : 'Seção sem checklist';
 }
 
+function evidenceLabel(evidence) {
+  const labels = { harness: 'harness', model: 'modelo', effort: 'effort', tokens: 'tokens', completed_at: 'concluído em' };
+  const entries = Object.entries(labels).filter(([field]) => evidence[field]);
+  if (!entries.length) return 'Seção sem campos';
+  return entries.map(([field, label]) => `<span class="evidence-item"><span class="muted">${label}</span> ${escapeHtml(evidence[field])}</span>`).join('');
+}
+
 function showDetails(entities, id) {
   const ticket = entities.find(entity => entity.id === id);
   if (!ticket) return;
@@ -186,6 +193,7 @@ function showDetails(entities, id) {
       <div><dt>Depende de</dt><dd>${entityLinks(entities, ticket.dependsOn, 'Nenhuma dependência')}</dd></div>
       <div><dt>Dependentes</dt><dd>${entityLinks(entities, dependents, 'Nenhum dependente')}</dd></div>
       <div><dt>Critérios de aceite</dt><dd>${acceptanceLabel(ticket)}</dd></div>
+      ${ticket.evidence ? `<div><dt>Evidência</dt><dd>${evidenceLabel(ticket.evidence)}</dd></div>` : ''}
       <div><dt>Fonte</dt><dd><code>${escapeHtml(ticket.source || 'índice')}</code></dd></div>
     </dl>
     <article class="ticket-body" aria-live="polite"><p class="muted">Carregando conteúdo…</p></article>

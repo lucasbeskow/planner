@@ -21,6 +21,6 @@ código entregue.
 - [x] tickets sem critérios de aceite são apontados
 - [x] especificações e decisões aparecem na UI
 - [x] links e referências externas são validados
-- [ ] evidências de execução são registradas e projetadas
+- [x] evidências de execução são registradas e projetadas
 - [ ] tickets se relacionam com commits e pull requests
 - [ ] dependências podem ser vistas como grafo

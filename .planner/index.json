@@ -4,12 +4,12 @@
     "initiative": "Planner local — do M0 à edição segura"
   },
   "summary": {
-    "total": 16,
+    "total": 17,
     "draft": 0,
-    "planned": 4,
+    "planned": 3,
     "inProgress": 1,
     "blocked": 0,
-    "done": 11,
+    "done": 13,
     "canceled": 0
   },
   "tickets": [
@@ -29,6 +29,7 @@
         "done": 5,
         "total": 5
       },
+      "evidence": null,
       "warnings": [],
       "source": ".planner/initiatives/PLN-001-mvp-local.md"
     },
@@ -51,6 +52,13 @@
         "done": 3,
         "total": 3
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-002-fixture-versionada.md"
     },
@@ -72,6 +80,13 @@
         "done": 3,
         "total": 3
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-003-corpo-na-ui.md"
     },
@@ -92,6 +107,13 @@
       "acceptance": {
         "done": 3,
         "total": 3
+      },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
       },
       "warnings": [],
       "source": ".planner/tickets/PLN-004-dependentes-na-ui.md"
@@ -115,6 +137,13 @@
         "done": 3,
         "total": 3
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-005-edicao-de-campos.md"
     },
@@ -137,6 +166,13 @@
         "done": 3,
         "total": 3
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-006-ticket-por-template.md"
     },
@@ -158,6 +194,13 @@
       "acceptance": {
         "done": 2,
         "total": 2
+      },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
       },
       "warnings": [],
       "source": ".planner/tickets/PLN-007-validar-transicoes.md"
@@ -182,6 +225,13 @@
         "done": 2,
         "total": 2
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-008-indice-apos-escrita.md"
     },
@@ -200,6 +250,13 @@
         "PLN-002"
       ],
       "acceptance": null,
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/decisions/PLN-009-fixture-oficial.md"
     },
@@ -216,9 +273,10 @@
       ],
       "dependsOn": [],
       "acceptance": {
-        "done": 3,
+        "done": 4,
         "total": 6
       },
+      "evidence": null,
       "warnings": [],
       "source": ".planner/initiatives/PLN-010-m2-contexto-de-engenharia.md"
     },
@@ -239,6 +297,13 @@
       "acceptance": {
         "done": 4,
         "total": 4
+      },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
       },
       "warnings": [],
       "source": ".planner/tickets/PLN-011-apontar-tickets-sem-criterios-de-aceite.md"
@@ -261,6 +326,13 @@
         "done": 2,
         "total": 2
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-012-listar-especificacoes-e-decisoes-na-ui.md"
     },
@@ -282,6 +354,13 @@
         "done": 3,
         "total": 3
       },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
+      },
       "warnings": [],
       "source": ".planner/tickets/PLN-013-validar-links-e-referencias-externas.md"
     },
@@ -290,7 +369,7 @@
       "type": "task",
       "title": "Registrar e projetar evidências de execução",
       "description": "Transformar o contrato de evidência de fechamento, hoje só de processo, em dado validado e projetado.",
-      "status": "planned",
+      "status": "done",
       "priority": "high",
       "phase": "M2",
       "labels": [
@@ -301,8 +380,15 @@
         "PLN-010"
       ],
       "acceptance": {
-        "done": 0,
+        "done": 3,
         "total": 3
+      },
+      "evidence": {
+        "harness": "Claude Code",
+        "model": "claude-opus-5",
+        "effort": "unknown",
+        "tokens": "unknown",
+        "completed_at": "2026-09-19"
       },
       "warnings": [],
       "source": ".planner/tickets/PLN-014-registrar-e-projetar-evidencias-de-execucao.md"
@@ -325,6 +411,7 @@
         "done": 0,
         "total": 2
       },
+      "evidence": null,
       "warnings": [],
       "source": ".planner/tickets/PLN-015-relacionar-ticket-commit-e-pull-request.md"
     },
@@ -346,8 +433,28 @@
         "done": 0,
         "total": 2
       },
+      "evidence": null,
       "warnings": [],
       "source": ".planner/tickets/PLN-016-mostrar-grafo-visual-de-dependencias.md"
+    },
+    {
+      "id": "PLN-017",
+      "type": "decision",
+      "title": "Evidência de execução fica em seção do ticket",
+      "description": "O PRD deixava em aberto se a evidência de execução seria uma seção do ticket ou uma entidade `evidence` separada, e como tratar tickets concluídos antes do contrato. Os tickets desta fixture já registravam a evidência em uma seção `## Evidência` com itens `- campo: valor`.",
+      "status": "done",
+      "priority": "medium",
+      "phase": "M2",
+      "labels": [
+        "evidencia"
+      ],
+      "dependsOn": [
+        "PLN-014"
+      ],
+      "acceptance": null,
+      "evidence": null,
+      "warnings": [],
+      "source": ".planner/decisions/PLN-017-evidencia-de-execucao-fica-em-secao-do-ticket.md"
     }
   ]
 }

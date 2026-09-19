@@ -345,7 +345,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 52 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 53 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
@@ -365,7 +365,11 @@ verificados e a evidência de execução estiver registrada com:
 
 A evidência fica no Markdown versionado do ticket ou em uma entidade referenciada por ele.
 Valores indisponíveis não devem ser inventados: usar `unknown` ou registrar a justificativa.
-Este contrato ainda é de processo: o runtime não valida nem projeta esses campos.
+A evidência fica na seção `## Evidência` (ou `Evidence`) do ticket, em itens `- campo: valor`
+(decisão PLN-017). `planner validate` avisa quando uma task `done` não tem a seção ou algum dos
+campos acima; tickets concluídos antes do contrato recebem o mesmo aviso e podem registrar
+`unknown`. O índice projeta `harness`, `model`, `effort`, `tokens` e `completed_at`, e a UI os
+mostra no detalhe; `validation` e limitações ficam só no Markdown.
 
 ## 5. Roadmap
 
@@ -380,7 +384,6 @@ Este contrato ainda é de processo: o runtime não valida nem projeta esses camp
 
 - mostrar grafo visual de dependências;
 - relacionar ticket, commit e pull request;
-- registrar e projetar evidências de execução.
 
 ### M3 — integrações opcionais
 
@@ -415,11 +418,8 @@ Ainda não há instrumentação no produto. Quando houver uso real, acompanhar:
 
 ## 8. Decisões em aberto
 
-- Evidência de execução: seção no ticket ou entidade `evidence` separada?
 - Objetivos: tipo `objective` próprio ou campo da iniciativa?
 - Como normalizar tokens quando harnesses reportam métricas incompatíveis?
-- Quais campos de execução entram no índice e quais ficam apenas no detalhe?
-- Como representar tickets concluídos antes da adoção do contrato de evidências?
 
 ## 9. Referências
 

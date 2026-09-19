@@ -2,7 +2,7 @@
 id: PLN-014
 type: task
 title: Registrar e projetar evidências de execução
-status: planned
+status: done
 priority: high
 phase: M2
 labels:
@@ -25,6 +25,16 @@ tickets desta fixture já usam a seção `## Evidência` com `harness`, `model`,
 
 ## Critérios de aceite
 
-- [ ] decisão registrada sobre onde a evidência vive
-- [ ] `planner validate` aponta tickets `done` sem evidência
-- [ ] a UI mostra a evidência no detalhe do ticket
+- [x] decisão registrada sobre onde a evidência vive
+- [x] `planner validate` aponta tickets `done` sem evidência
+- [x] a UI mostra a evidência no detalhe do ticket
+
+## Evidência
+
+- harness: Claude Code
+- model: claude-opus-5
+- effort: unknown
+- tokens: unknown
+- completed_at: 2026-09-19
+- validation: `npm test` (53 cenários passando, 1 novo cobrindo leitura, avisos e projeção), `npx planner validate` sem avisos na fixture; detalhe conferido no Chrome
+- limitações: um ticket guarda uma única evidência; várias execuções exigem rever a decisão PLN-017

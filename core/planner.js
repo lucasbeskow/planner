@@ -105,17 +105,23 @@ function summarize(body) {
   return paragraph ? paragraph.split('\n').map(line => line.trim()).join(' ') : '';
 }
 
-// Progresso do checklist da seção de critérios de aceite; null quando a seção não existe.
-function acceptanceProgress(body) {
+// Linhas de uma seção do corpo, até o próximo título de mesmo nível ou superior; null sem seção.
+function sectionLines(body, title) {
   const lines = String(body ?? '').split(/\r?\n/);
-  const start = lines.findIndex(line => /^#{1,6}\s+crit[ée]rios de aceite/i.test(line));
+  const start = lines.findIndex(line => title.test(line.replace(/^#{1,6}\s+/, '').trim()) && /^#{1,6}\s/.test(line));
   if (start < 0) return null;
   const level = lines[start].match(/^#+/)[0].length;
+  const end = lines.findIndex((line, index) => index > start && (line.match(/^(#{1,6})\s/)?.[1].length ?? 7) <= level);
+  return lines.slice(start + 1, end < 0 ? undefined : end);
+}
+
+// Progresso do checklist da seção de critérios de aceite; null quando a seção não existe.
+function acceptanceProgress(body) {
+  const lines = sectionLines(body, /^crit[ée]rios de aceite/i);
+  if (!lines) return null;
   let total = 0;
   let done = 0;
-  for (const line of lines.slice(start + 1)) {
-    const heading = line.match(/^(#{1,6})\s/);
-    if (heading && heading[1].length <= level) break;
+  for (const line of lines) {
     const task = line.match(/^\s*(?:[-*+]|\d+[.)])\s+\[([ xX])\]/);
     if (task) {
       total += 1;
@@ -123,6 +129,22 @@ function acceptanceProgress(body) {
     }
   }
   return { done, total };
+}
+
+// Campos exigidos pelo contrato de fechamento (PRD, "Fechamento de tickets"). `unknown` é um
+// valor aceito: o que falta é o campo, não a informação.
+const EVIDENCE_FIELDS = ['harness', 'model', 'effort', 'tokens', 'completed_at', 'validation'];
+
+// Evidência de execução: itens `- campo: valor` da seção Evidência do ticket; null sem seção.
+function parseEvidence(body) {
+  const lines = sectionLines(body, /^(evid[êe]ncias?|evidence)$/i);
+  if (!lines) return null;
+  const evidence = {};
+  for (const line of lines) {
+    const item = line.match(/^\s*[-*+]\s+([\p{L}_][\p{L}\p{N}_ -]*?)\s*:\s+(.+)$/u);
+    if (item) evidence[item[1].trim().toLowerCase().replace(/\s+/g, '_')] = item[2].trim();
+  }
+  return evidence;
 }
 
 function readConfig(root) {
@@ -147,6 +169,7 @@ function readEntities(root) {
       dependsOn: parsed.attributes.depends_on ?? [],
       description: summarize(parsed.body),
       acceptance: acceptanceProgress(parsed.body),
+      evidence: parseEvidence(parsed.body),
       body: parsed.body,
       filePath: path.relative(root, filePath)
     };
@@ -237,8 +260,17 @@ function acceptanceWarnings(entity) {
   return [];
 }
 
+// Tickets concluídos antes do contrato também recebem aviso, não erro: completar a seção com
+// `unknown` basta para registrar que a informação não existe.
+function evidenceWarnings(entity) {
+  if (entity.type !== 'task' || entity.status !== 'done') return [];
+  if (!entity.evidence) return ['concluído sem seção Evidência'];
+  const missing = EVIDENCE_FIELDS.filter(field => !entity.evidence[field]);
+  return missing.length ? [`Evidência sem ${missing.join(', ')}`] : [];
+}
+
 function entityWarnings(entity) {
-  return [...acceptanceWarnings(entity), ...(entity.references ? referenceWarnings(entity.references) : [])];
+  return [...acceptanceWarnings(entity), ...evidenceWarnings(entity), ...(entity.references ? referenceWarnings(entity.references) : [])];
 }
 
 function warnings(entities) {
@@ -276,6 +308,13 @@ function initiativeTitle(entities, config) {
   return (active || initiatives[0])?.title || 'Planner';
 }
 
+// O índice leva só os campos curtos da evidência; validação e limitações ficam no Markdown.
+function projectEvidence(evidence) {
+  if (!evidence) return null;
+  const fields = ['harness', 'model', 'effort', 'tokens', 'completed_at'];
+  return Object.fromEntries(fields.filter(field => evidence[field]).map(field => [field, evidence[field]]));
+}
+
 function buildIndex(root, entities) {
   const config = readConfig(root);
   // O branch não entra na projeção versionada: ele mudaria o arquivo conforme o branch que o gerou.
@@ -297,6 +336,7 @@ function buildIndex(root, entities) {
       labels: entity.labels || [],
       dependsOn: entity.dependsOn,
       acceptance: entity.acceptance ?? null,
+      evidence: projectEvidence(entity.evidence),
       warnings: entityWarnings(entity),
       source: entity.filePath
     }))
@@ -333,10 +373,12 @@ function contextFor(entities, id) {
 
 module.exports = {
   ALLOWED_STATUSES,
+  EVIDENCE_FIELDS,
   acceptanceProgress,
   ALLOWED_TYPES,
   buildIndex,
   contextFor,
+  parseEvidence,
   parseFrontmatter,
   parseScalar,
   readConfig,
