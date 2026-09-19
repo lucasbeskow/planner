@@ -1,0 +1,22 @@
+{
+  "name": "planner",
+  "version": "0.1.0",
+  "description": "Planner local de engenharia baseado em arquivos Markdown.",
+  "license": "MIT",
+  "bin": {
+    "planner": "cli.js",
+    "planner-mcp": "mcp.js",
+    "planner-serve": "serve.js"
+  },
+  "scripts": {
+    "test": "npm run planner:test",
+    "planner": "node cli.js",
+    "planner:index": "node cli.js index",
+    "planner:mcp": "node mcp.js",
+    "planner:serve": "node serve.js",
+    "planner:test": "node --test tests/planner.node.js"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

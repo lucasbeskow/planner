@@ -19,7 +19,7 @@ function isAllowed(relativePath) {
     || relativePath.startsWith('.planner/');
 }
 
-function createPlannerServer(root) {
+function createPlannerServer(root, assetsRoot = path.join(root, 'planner')) {
   return http.createServer((request, response) => {
     if (request.method !== 'GET' && request.method !== 'HEAD') {
       response.writeHead(405, { Allow: 'GET, HEAD' }).end();
@@ -39,9 +39,13 @@ function createPlannerServer(root) {
       return;
     }
 
-    const filePath = path.resolve(root, `.${pathname}`, pathname.endsWith('/') ? 'index.html' : '');
-    const relativePath = path.relative(root, filePath).split(path.sep).join('/');
-    if (relativePath.startsWith('..') || path.isAbsolute(relativePath) || !isAllowed(relativePath)) {
+    const isPlannerAsset = pathname === '/planner/' || pathname.startsWith('/planner/');
+    const contentRoot = isPlannerAsset ? assetsRoot : root;
+    const contentPath = isPlannerAsset ? pathname.slice('/planner/'.length) : pathname.slice(1);
+    const filePath = path.resolve(contentRoot, contentPath || 'index.html');
+    const relativePath = path.relative(contentRoot, filePath).split(path.sep).join('/');
+    const routePath = isPlannerAsset ? `planner/${relativePath}` : relativePath;
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath) || !isAllowed(routePath)) {
       response.writeHead(404).end();
       return;
     }
@@ -61,9 +65,9 @@ function createPlannerServer(root) {
 }
 
 if (require.main === module) {
-  const root = path.resolve(process.env.PLANNER_ROOT || path.join(__dirname, '..'));
+  const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
   const port = Number(process.env.PLANNER_PORT || 4400);
-  createPlannerServer(root).listen(port, '127.0.0.1', () => {
+  createPlannerServer(root, __dirname).listen(port, '127.0.0.1', () => {
     console.log(`Planner disponível em http://localhost:${port}/planner/`);
   });
 }

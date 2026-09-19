@@ -1,0 +1,4 @@
+interface:
+  display_name: Planner Workflow
+  short_description: Consulta e executa o workflow local do Planner
+  default_prompt: Use o Planner para consultar contexto, executar a próxima tarefa e registrar evidências.

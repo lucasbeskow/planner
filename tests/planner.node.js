@@ -8,9 +8,9 @@ const util = require('node:util');
 const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
 const { createPlannerServer } = require('../serve');
 
-const root = path.resolve(__dirname, '../..');
-const cliPath = path.join(root, 'planner/cli.js');
-const mcpPath = path.join(root, 'planner/mcp.js');
+const root = path.resolve(__dirname, '..');
+const cliPath = path.join(root, 'cli.js');
+const mcpPath = path.join(root, 'mcp.js');
 
 // Os testes de comportamento usam um conjunto próprio de entidades, para não depender
 // da quantidade de tickets versionados nem do branch atual.
@@ -211,7 +211,7 @@ test('carrega as entidades de todas as fontes configuradas', () => {
 });
 
 test('as entidades versionadas do Planner são válidas', () => {
-  assert.deepEqual(validate(readEntities(root)), []);
+  assert.deepEqual(validate(readEntities(fixtureRoot)), []);
 });
 
 test('detecta ciclos de dependência', () => {
@@ -286,15 +286,15 @@ test('o resumo conta todos os status aceitos', () => {
 });
 
 test('o índice versionado é consistente', () => {
-  const index = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
+  const index = buildIndex(fixtureRoot, readEntities(fixtureRoot));
 
   assert.equal(index.summary.total, index.tickets.length);
-  assert.ok(index.tickets.every(ticket => fs.existsSync(path.join(root, ticket.source))));
+  assert.ok(index.tickets.every(ticket => fs.existsSync(path.join(fixtureRoot, ticket.source))));
 });
 
 test('o índice versionado está atualizado com os arquivos Markdown', () => {
-  const committed = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
-  const generated = JSON.parse(JSON.stringify(buildIndex(root, readEntities(root))));
+  const committed = buildIndex(fixtureRoot, readEntities(fixtureRoot));
+  const generated = JSON.parse(JSON.stringify(buildIndex(fixtureRoot, readEntities(fixtureRoot))));
   const byId = index => new Map(index.tickets.map(ticket => [ticket.id, JSON.stringify(ticket)]));
   const committedTickets = byId(committed);
   const generatedTickets = byId(generated);

@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
 
-const root = path.resolve(process.env.PLANNER_ROOT || path.join(__dirname, '..'));
+const root = path.resolve(process.env.PLANNER_ROOT || process.cwd());
 const rawArguments = process.argv.slice(2);
 const isFlag = value => value.startsWith('-');
 const flags = new Set(rawArguments.filter(isFlag));

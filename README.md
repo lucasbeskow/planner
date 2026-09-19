@@ -1,10 +1,10 @@
 # Planner local
 
-Primeiro protótipo do sistema de gestão local do repositório.
+Sistema de gestão local de engenharia, executado a partir do repositório consumidor.
 
 ## Objetivo
 
-Renderizar uma visão de acompanhamento a partir de um índice local, sem adicionar dependências ao pacote dos Web Components.
+Renderizar uma visão de acompanhamento a partir de arquivos Markdown locais, sem exigir banco ou serviço remoto.
 
 ## Estado atual
 
@@ -19,31 +19,31 @@ O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeç
 Para regenerar o índice depois de editar uma entidade:
 
 ```bash
-yarn planner:index
+npx planner index
 ```
 
 A CLI também pode ser usada por agentes e scripts:
 
 ```bash
-yarn planner help
-yarn planner status --json
-yarn planner list planned --json
-yarn planner show PLN-002 --json
-yarn planner context PLN-009 --json
-yarn planner validate --json
+npx planner help
+npx planner status --json
+npx planner list planned --json
+npx planner show PLN-002 --json
+npx planner context PLN-009 --json
+npx planner validate --json
 ```
 
 Para conectar um agente compatível com MCP, use o comando local por stdio:
 
 ```bash
-yarn planner:mcp
+npx planner-mcp
 ```
 
 O servidor expõe somente as ferramentas `planner_status`, `planner_list`, `planner_show`,
 `planner_context` e `planner_validate`. A configuração do cliente deve apontar para o
 comando acima na raiz deste repositório.
 
-O guia de integração está em `planner/docs/integracao-agentes.md`. O workflow reutilizável dos agentes está em `.planner/skills/planner-workflow/`. Ele pode
+O guia de integração está em `docs/integracao-agentes.md`. O workflow reutilizável dos agentes está em `skills/planner-workflow/`. Ele pode
 ser empacotado ou instalado no diretório de skills do agente escolhido.
 
 Cada ticket exibido pela UI informa também o caminho do arquivo que originou os dados.
@@ -51,7 +51,7 @@ Cada ticket exibido pela UI informa também o caminho do arquivo que originou os
 Para abrir a UI, rode o servidor local e acesse `http://localhost:4400/planner/`:
 
 ```bash
-yarn planner:serve
+npx planner-serve
 ```
 
 O servidor escuta só em `127.0.0.1` e expõe apenas `planner/`, `.planner/` e `.git/HEAD`. A porta
