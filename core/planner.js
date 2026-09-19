@@ -136,7 +136,8 @@ function buildIndex(root, entities) {
       priority: entity.priority,
       phase: entity.phase,
       labels: entity.labels || [],
-      dependsOn: entity.dependsOn
+      dependsOn: entity.dependsOn,
+      source: entity.filePath
     }))
   };
 }

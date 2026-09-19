@@ -109,6 +109,7 @@ function showDetails(ticket) {
       <div><dt>Fase</dt><dd>${escapeHtml(ticket.phase)}</dd></div>
       <div><dt>Labels</dt><dd>${ticket.labels.map(label => `<span class="label">${escapeHtml(label)}</span>`).join(' ')}</dd></div>
       <div><dt>Depende de</dt><dd>${ticket.dependsOn.length ? ticket.dependsOn.map(id => escapeHtml(id)).join(', ') : 'Nenhuma dependência'}</dd></div>
+      <div><dt>Fonte</dt><dd><code>${escapeHtml(ticket.source || 'índice')}</code></dd></div>
     </dl>
   `;
   details.querySelector('.dialog-close').addEventListener('click', () => details.close());

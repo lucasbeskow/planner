@@ -36,4 +36,5 @@ test('o índice gerado permanece válido', () => {
   const index = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
   assert.equal(index.summary.total, index.tickets.length);
   assert.equal(index.repository.branch, 'planner');
+  assert.equal(index.tickets.find(ticket => ticket.id === 'PLN-003').source, '.planner/tickets/PLN-003-ler-markdown.md');
 });
