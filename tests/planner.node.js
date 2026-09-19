@@ -7,9 +7,16 @@ const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = req
 
 const root = path.resolve(__dirname, '../..');
 const cliPath = path.join(root, 'planner/cli.js');
+const mcpPath = path.join(root, 'planner/mcp.js');
 
 function runCli(...args) {
   return spawnSync(process.execPath, [cliPath, ...args], { cwd: root, encoding: 'utf8' });
+}
+
+function runMcp(messages) {
+  const input = `${messages.map(message => JSON.stringify(message)).join('\n')}\n`;
+  const processResult = spawnSync(process.execPath, [mcpPath], { cwd: root, input, encoding: 'utf8' });
+  return { ...processResult, responses: processResult.stdout.trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) };
 }
 
 test('lê frontmatter escalar e arrays', () => {
@@ -149,4 +156,27 @@ test('a CLI oferece ajuda e erros acionáveis', () => {
   assert.match(missing.stderr, /informe o id da entidade/);
   assert.equal(unknown.status, 1);
   assert.match(unknown.stderr, /comando desconhecido/);
+});
+
+test('o servidor MCP expõe ferramentas somente leitura', () => {
+  const mcp = runMcp([
+    { jsonrpc: '2.0', id: 1, method: 'initialize', params: {} },
+    { jsonrpc: '2.0', method: 'notifications/initialized' },
+    { jsonrpc: '2.0', id: 2, method: 'tools/list' },
+    { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'planner_status', arguments: {} } },
+    { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'planner_context', arguments: { id: 'PLN-009' } } }
+  ]);
+
+  assert.equal(mcp.status, 0);
+  assert.equal(mcp.responses.length, 4);
+  assert.equal(mcp.responses[0].result.serverInfo.name, 'planner-local');
+  assert.deepEqual(mcp.responses[1].result.tools.map(tool => tool.name), [
+    'planner_status',
+    'planner_list',
+    'planner_show',
+    'planner_context',
+    'planner_validate'
+  ]);
+  assert.equal(JSON.parse(mcp.responses[2].result.content[0].text).total, 10);
+  assert.equal(JSON.parse(mcp.responses[3].result.content[0].text).entity.id, 'PLN-009');
 });

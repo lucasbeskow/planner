@@ -33,11 +33,20 @@ yarn planner context PLN-009 --json
 yarn planner validate
 ```
 
+Para conectar um agente compatível com MCP, use o comando local por stdio:
+
+```bash
+yarn planner:mcp
+```
+
+O servidor expõe somente as ferramentas `planner_status`, `planner_list`, `planner_show`,
+`planner_context` e `planner_validate`. A configuração do cliente deve apontar para o
+comando acima na raiz deste repositório.
+
 Cada ticket exibido pela UI informa também o caminho do arquivo que originou os dados.
 
 Para testar, sirva a raiz do repositório por HTTP e abra `/planner/`. A leitura do índice usa `fetch` e não funciona corretamente via `file://`.
 
 ## Próximos passos
 
-1. expor uma integração local somente leitura para agentes;
-2. criar a skill de workflow do Planner.
+1. criar a skill de workflow do Planner.
