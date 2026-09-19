@@ -45,7 +45,7 @@ Answer these questions before advancing:
 ## Executar uma tarefa
 
 1. Read the ticket, its dependencies, and the relevant implementation.
-2. Resolve ambiguity with questions; record constraints and acceptance criteria in the ticket.
+2. Resolve ambiguity with questions; record constraints and acceptance criteria in the ticket. Create new tickets with `npx planner new "<title>" [field=value]...`, review the output, then repeat with `--yes`.
 3. Run the critical review above and define a small increment with an observable acceptance condition.
 4. Implement only the requested scope and add focused tests.
 5. Run relevant project checks and `npx planner validate` when Planner files or relations changed.

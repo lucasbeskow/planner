@@ -40,6 +40,13 @@ npx planner set PLN-005 status=in_progress labels+=ui --yes
 npx planner index
 ```
 
+Para registrar trabalho novo, gere o ticket pelo template em vez de escrever o frontmatter:
+
+```bash
+npx planner new "Título do ticket" priority=high depends_on=PLN-005   # só mostra o arquivo
+npx planner new "Título do ticket" priority=high depends_on=PLN-005 --yes
+```
+
 Transições fora do fluxo, como concluir um ticket com dependências abertas, são recusadas com
 os motivos. Use `--force` somente quando o usuário pedir para reabrir ou pular uma etapa.
 

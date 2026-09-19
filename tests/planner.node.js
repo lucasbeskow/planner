@@ -751,3 +751,90 @@ test('set --force permite reabrir, mas não ignora valores inválidos', () => {
     fs.rmSync(transitionRoot, { recursive: true, force: true });
   }
 });
+
+test('new mostra o arquivo e só cria com --yes, com o próximo id livre', () => {
+  const newRoot = createFixture();
+  try {
+    const preview = runCliIn(newRoot, 'new', 'Exportar relatório', 'labels=ui', 'depends_on=FIX-002', 'phase=M1');
+    assert.equal(preview.status, 0, preview.stderr);
+    assert.match(preview.stdout, /^\+\+\+ b\/\.planner\/tickets\/FIX-005-exportar-relatorio\.md$/m);
+    assert.match(preview.stdout, /Nenhum arquivo criado/);
+    assert.equal(fs.existsSync(path.join(newRoot, '.planner/tickets/FIX-005-exportar-relatorio.md')), false);
+
+    const created = JSON.parse(runCliIn(newRoot, 'new', 'Exportar relatório', 'labels=ui', 'depends_on=FIX-002', 'phase=M1', '--yes', '--json').stdout);
+    assert.equal(created.id, 'FIX-005');
+    assert.equal(created.written, true);
+    assert.equal(fs.readFileSync(path.join(newRoot, created.file), 'utf8'), `---
+id: FIX-005
+type: task
+title: Exportar relatório
+status: planned
+priority: medium
+phase: M1
+labels:
+  - ui
+depends_on:
+  - FIX-002
+---
+
+## Objetivo
+
+Descreva o resultado esperado de Exportar relatório.
+
+## Critérios de aceite
+
+- [ ] critério observável
+`);
+    assert.equal(runCliIn(newRoot, 'validate').status, 0);
+
+    const next = JSON.parse(runCliIn(newRoot, 'new', 'Outro', '--json').stdout);
+    assert.equal(next.id, 'FIX-006');
+  } finally {
+    fs.rmSync(newRoot, { recursive: true, force: true });
+  }
+});
+
+test('new usa template do repositório por tipo e protege títulos ambíguos', () => {
+  const newRoot = createFixture({ idPrefix: 'ADR', sources: ['initiatives', 'tickets', 'decisions'] });
+  try {
+    fs.mkdirSync(path.join(newRoot, '.planner/templates'));
+    fs.writeFileSync(path.join(newRoot, '.planner/templates/decision.md'), '## Contexto\n\n{{id}}: {{title}} ({{type}})\n');
+    const result = runCliIn(newRoot, 'new', 'Usar SQLite? # talvez', 'type=decision', '--yes', '--json');
+    assert.equal(result.status, 0, result.stderr);
+    const created = JSON.parse(result.stdout);
+    assert.equal(created.id, 'ADR-001');
+    assert.equal(created.file, '.planner/decisions/ADR-001-usar-sqlite-talvez.md');
+    assert.equal(created.template, '.planner/templates/decision.md');
+    const content = fs.readFileSync(path.join(newRoot, created.file), 'utf8');
+    assert.match(content, /^title: "Usar SQLite\? # talvez"$/m);
+    assert.match(content, /^ADR-001: Usar SQLite\? # talvez \(decision\)$/m);
+    assert.equal(JSON.parse(runCliIn(newRoot, 'show', 'ADR-001', '--json').stdout).title, 'Usar SQLite? # talvez');
+  } finally {
+    fs.rmSync(newRoot, { recursive: true, force: true });
+  }
+});
+
+test('new rejeita campos inválidos antes de criar arquivos', () => {
+  const newRoot = createFixture({ sources: ['initiatives', 'tickets'] });
+  try {
+    const cases = [
+      [[], /informe o título/],
+      [['Título', 'type=bug'], /type inválido: bug/],
+      [['Título', 'status=feito'], /status inválido: feito/],
+      [['Título', 'priority=muito alta'], /priority inválido/],
+      [['Título', 'title=Outro'], /campo não aceito em new: title/],
+      [['Título', 'depends_on=FIX-999'], /dependência inexistente FIX-999/],
+      [['Título', 'type=spec'], /o diretório specs não está entre as fontes/],
+      [['"Aspas" e \'b\''], /aspas simples e duplas/]
+    ];
+    const before = fs.readdirSync(path.join(newRoot, '.planner/tickets'));
+    for (const [args, message] of cases) {
+      const result = runCliIn(newRoot, 'new', ...args, '--yes');
+      assert.equal(result.status, 1, args.join(' '));
+      assert.match(result.stderr, message);
+    }
+    assert.deepEqual(fs.readdirSync(path.join(newRoot, '.planner/tickets')), before);
+  } finally {
+    fs.rmSync(newRoot, { recursive: true, force: true });
+  }
+});

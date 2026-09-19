@@ -227,4 +227,4 @@ function applyEdit(root, plan) {
   fs.writeFileSync(absolutePath, plan.after);
 }
 
-module.exports = { EDITABLE_FIELDS, applyEdit, parseAssignment, planEdit, unifiedDiff };
+module.exports = { EDITABLE_FIELDS, TOKEN, applyEdit, parseAssignment, planEdit, unifiedDiff };

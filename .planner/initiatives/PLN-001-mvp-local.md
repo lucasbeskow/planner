@@ -26,4 +26,4 @@ oficial do projeto: o próprio Planner é planejado com o Planner.
 - [x] corpo Markdown e critérios de aceite renderizados na UI
 - [x] navegação por dependentes na UI
 - [x] edição de status, prioridade e labels com diff revisável
-- [ ] criação de ticket a partir de template
+- [x] criação de ticket a partir de template

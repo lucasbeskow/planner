@@ -6,10 +6,10 @@
   "summary": {
     "total": 9,
     "draft": 0,
-    "planned": 2,
+    "planned": 1,
     "inProgress": 1,
     "blocked": 0,
-    "done": 6,
+    "done": 7,
     "canceled": 0
   },
   "tickets": [
@@ -98,7 +98,7 @@
       "type": "task",
       "title": "Criar ticket a partir de template",
       "description": "Criar tickets com frontmatter válido, próximo id livre e seções padrão.",
-      "status": "planned",
+      "status": "done",
       "priority": "medium",
       "phase": "M1",
       "labels": [

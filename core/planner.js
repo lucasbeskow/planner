@@ -2,6 +2,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
+const ALLOWED_TYPES = ['initiative', 'task', 'decision', 'spec', 'cycle'];
 const ALLOWED_STATUSES = ['draft', 'planned', 'in_progress', 'blocked', 'done', 'canceled'];
 
 // Subconjunto de YAML aceito no frontmatter (documentado em planner/README.md):
@@ -140,7 +141,7 @@ function validationIssues(entities) {
   const issues = [];
   const report = (entityIds, message) => issues.push({ ids: entityIds.filter(Boolean), message });
   const ids = new Set();
-  const allowedTypes = new Set(['initiative', 'task', 'decision', 'spec', 'cycle']);
+  const allowedTypes = new Set(ALLOWED_TYPES);
   const allowedStatuses = new Set(ALLOWED_STATUSES);
 
   for (const entity of entities) {
@@ -264,10 +265,12 @@ function contextFor(entities, id) {
 
 module.exports = {
   ALLOWED_STATUSES,
+  ALLOWED_TYPES,
   buildIndex,
   contextFor,
   parseFrontmatter,
   parseScalar,
+  readConfig,
   readEntities,
   stripComment,
   summary,

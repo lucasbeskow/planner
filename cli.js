@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 const fs = require('node:fs');
 const path = require('node:path');
+const { applyCreate, planCreate } = require('./core/create');
 const { applyEdit, planEdit } = require('./core/edit');
 const { buildIndex, contextFor, readEntities, validate } = require('./core/planner');
 
@@ -25,12 +26,18 @@ Comandos:
                          mostra o diff de status, priority ou labels;
                          grava somente com --yes; --force permite
                          transições de status fora do fluxo
+  new <título> [campo=valor]...
+                         mostra o arquivo de um novo ticket a partir do
+                         template; grava somente com --yes
   index                  regenera o índice derivado
   help, -h, --help       mostra esta ajuda
 
 Em set, status segue draft → planned → in_progress → done, com blocked a partir de
 in_progress e canceled a partir de qualquer status não final. done exige dependências
 concluídas ou canceladas; iniciativas não contam como dependência.
+Em new, os campos aceitos são type, status, priority, phase, labels e depends_on
+(listas separadas por vírgula). O template vem de .planner/templates/<type>.md,
+.planner/templates/default.md ou do padrão embutido.
 Em set, labels aceita labels=a,b (substitui), labels+=a e labels-=a.
 
 --json retorna dados estruturados para agentes e scripts.
@@ -62,6 +69,20 @@ function setCommand() {
     output(`${plan.diff}\n\n${write
       ? `Gravado em ${plan.file}. Rode npx planner index para atualizar a UI.`
       : 'Nenhuma alteração gravada. Repita com --yes para gravar.'}`);
+  }
+}
+
+function newCommand() {
+  const plan = planCreate(root, argument, rest);
+  const write = flags.has('--yes');
+  if (write) applyCreate(root, plan);
+
+  if (flags.has('--json')) {
+    output({ id: plan.id, file: plan.file, template: plan.template, content: plan.content, diff: plan.diff, written: write });
+  } else {
+    output(`${plan.diff}\n\n${write
+      ? `Criado ${plan.id} em ${plan.file}. Rode npx planner index para atualizar a UI.`
+      : 'Nenhum arquivo criado. Repita com --yes para criar.'}`);
   }
 }
 
@@ -141,6 +162,9 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
         }
         break;
       }
+      case 'new':
+        newCommand();
+        break;
       case 'set':
         setCommand();
         break;

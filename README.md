@@ -90,6 +90,18 @@ npx planner set PLN-005 status=in_progress priority=high labels+=ui --yes
 Sem `--yes`, o comando só mostra o diff. Com `--yes`, grava somente as linhas alteradas e
 preserva comentários, ordem das chaves e corpo. Depois de gravar, rode `npx planner index`.
 
+Para criar um ticket a partir do template:
+
+```bash
+npx planner new "Exportar relatório" priority=high labels=ui depends_on=PLN-003
+npx planner new "Exportar relatório" priority=high labels=ui depends_on=PLN-003 --yes
+```
+
+O id é o próximo livre do prefixo em uso (ou de `idPrefix`). O corpo vem de
+`.planner/templates/<type>.md`, de `.planner/templates/default.md` ou do template padrão, com
+`Objetivo` e `Critérios de aceite`. Templates contêm só o corpo e aceitam `{{id}}`, `{{title}}`
+e `{{type}}`.
+
 Mudanças de status seguem `draft → planned → in_progress → done`, com `blocked` a partir de
 `in_progress` e `canceled` a partir de qualquer status não final. `done` exige dependências
 concluídas ou canceladas. Quando a transição é recusada, a CLI lista os motivos; `--force`
@@ -126,7 +138,8 @@ pode ser alterada com `PLANNER_PORT`. A leitura do índice usa `fetch` e não fu
 
 - `sources`: diretórios de `.planner/` com entidades Markdown;
 - `repository`: nome do repositório; sem ele, o Planner usa o `name` do `package.json`;
-- `initiative`: título exibido na UI; sem ele, o Planner usa a primeira iniciativa ativa.
+- `initiative`: título exibido na UI; sem ele, o Planner usa a primeira iniciativa ativa;
+- `idPrefix`: prefixo dos ids criados por `planner new`; sem ele, o Planner usa o mais frequente.
 
 A CLI e o MCP aceitam `PLANNER_ROOT` para ler outro repositório.
 
@@ -154,5 +167,5 @@ na raiz para ver a UI com o planejamento do próprio Planner.
 
 ## Próximos passos
 
-As próximas evoluções do Planner são criação de tickets por template, atualização do índice na mesma operação de escrita e integrações opcionais com
+As próximas evoluções do Planner são atualização do índice na mesma operação de escrita e integrações opcionais com
 serviços externos. Os itens estão em `.planner/tickets/`.

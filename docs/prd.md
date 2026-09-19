@@ -175,6 +175,7 @@ arquivos Markdown em .planner/
 
 - `core/planner.js` concentra parser, leitura, resumo, projeção, contexto e validação;
 - `core/transitions.js` declara as transições de status permitidas;
+- `core/create.js` gera novos tickets a partir de template, com o próximo id livre;
 - `core/edit.js` calcula edições de frontmatter como diff e grava somente um plano revisado;
 - `cli.js` oferece consulta, inicialização, edição de campos e regeneração do índice;
 - `mcp.js` adapta o mesmo domínio ao protocolo MCP por stdio;
@@ -263,6 +264,22 @@ comando só mostra o diff unificado; com `--yes`, grava o mesmo diff. `labels` a
 - Alterações que não mudam valores não tocam o arquivo.
 - O índice não é regenerado automaticamente; isso fica para PLN-008.
 
+#### RF10 — Criação por template
+
+`planner new "<título>" [campo=valor]...` gera uma entidade com frontmatter válido. Sem `--yes`,
+só mostra o arquivo; com `--yes`, cria o arquivo sem sobrescrever nenhum existente.
+
+- Campos aceitos: `type` (padrão `task`), `status` (padrão `planned`), `priority` (padrão
+  `medium`), `phase`, `labels` e `depends_on`. Valores seguem as mesmas regras do `set`.
+- O id usa `idPrefix` de `config.json` ou o prefixo mais frequente, com o maior número + 1.
+- O arquivo vai para o diretório do tipo (`tickets`, `decisions`, `specs`, `initiatives`,
+  `cycles`), que precisa estar em `sources`, com nome `<id>-<slug-do-título>.md`.
+- O corpo vem de `.planner/templates/<type>.md`, `.planner/templates/default.md` ou do
+  template embutido, com as seções `Objetivo` e `Critérios de aceite`. Templates têm só corpo e
+  aceitam `{{id}}`, `{{title}}` e `{{type}}`.
+- Títulos que o parser leria de outra forma, como os que contêm ` #`, são gravados entre aspas.
+- A criação é recusada se introduzir um problema de validação, como dependência inexistente.
+
 ## 4. Expectations — expectativas
 
 ### Experiência esperada
@@ -304,7 +321,7 @@ npx planner-serve
 npx planner-mcp
 ```
 
-`npm test` cobre 45 cenários automatizados. Em ambientes restritos, o cenário que abre um
+`npm test` cobre 48 cenários automatizados. Em ambientes restritos, o cenário que abre um
 socket local pode falhar com `EPERM` por limitação do ambiente, sem indicar falha da regra de
 roteamento testada.
 
