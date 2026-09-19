@@ -22,12 +22,22 @@ Para regenerar o índice depois de editar uma entidade:
 yarn planner:index
 ```
 
+A CLI também pode ser usada por agentes e scripts:
+
+```bash
+yarn planner help
+yarn planner status --json
+yarn planner list planned --json
+yarn planner show PLN-002 --json
+yarn planner context PLN-009 --json
+yarn planner validate
+```
+
 Cada ticket exibido pela UI informa também o caminho do arquivo que originou os dados.
 
 Para testar, sirva a raiz do repositório por HTTP e abra `/planner/`. A leitura do índice usa `fetch` e não funciona corretamente via `file://`.
 
 ## Próximos passos
 
-1. definir a CLI semântica do Planner;
-2. expor uma integração local somente leitura para agentes;
-3. criar a skill de workflow do Planner.
+1. expor uma integração local somente leitura para agentes;
+2. criar a skill de workflow do Planner.
