@@ -91,13 +91,46 @@ function validate(entities) {
     ids.add(entity.id);
     if (entity.type && !allowedTypes.has(entity.type)) errors.push(`${entity.filePath}: type inválido ${entity.type}`);
     if (entity.status && !allowedStatuses.has(entity.status)) errors.push(`${entity.filePath}: status inválido ${entity.status}`);
+    if (!Array.isArray(entity.dependsOn)) errors.push(`${entity.id || entity.filePath}: depends_on deve ser uma lista`);
   }
 
   for (const entity of entities) {
-    for (const dependency of entity.dependsOn) {
+    const dependencies = Array.isArray(entity.dependsOn) ? entity.dependsOn : [];
+    for (const dependency of dependencies) {
       if (!ids.has(dependency)) errors.push(`${entity.id}: dependência inexistente ${dependency}`);
     }
   }
+
+  const states = new Map();
+  const stack = [];
+  const cycles = new Set();
+  const byId = new Map(entities.map(entity => [entity.id, entity]));
+
+  function visit(id) {
+    states.set(id, 'visiting');
+    stack.push(id);
+    const entity = byId.get(id);
+    const dependencies = entity && Array.isArray(entity.dependsOn) ? entity.dependsOn : [];
+
+    for (const dependency of dependencies) {
+      if (!byId.has(dependency)) continue;
+      if (states.get(dependency) === 'visiting') {
+        const start = stack.indexOf(dependency);
+        cycles.add([...stack.slice(start), dependency].join(' -> '));
+      } else if (states.get(dependency) !== 'visited') {
+        visit(dependency);
+      }
+    }
+
+    stack.pop();
+    states.set(id, 'visited');
+  }
+
+  for (const entity of entities) {
+    if (!states.has(entity.id)) visit(entity.id);
+  }
+
+  for (const cycle of cycles) errors.push(`ciclo de dependências: ${cycle}`);
 
   return errors;
 }

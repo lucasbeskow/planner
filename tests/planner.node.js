@@ -25,6 +25,32 @@ test('não encontra erros no conjunto inicial', () => {
   assert.deepEqual(validate(readEntities(root)), []);
 });
 
+test('detecta ciclos de dependência', () => {
+  const errors = validate([
+    { id: 'A', title: 'A', type: 'task', status: 'planned', dependsOn: ['B'], filePath: 'a.md' },
+    { id: 'B', title: 'B', type: 'task', status: 'planned', dependsOn: ['A'], filePath: 'b.md' }
+  ]);
+
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /ciclo de dependências: A -> B -> A/);
+});
+
+test('detecta auto-dependência', () => {
+  const errors = validate([
+    { id: 'A', title: 'A', type: 'task', status: 'planned', dependsOn: ['A'], filePath: 'a.md' }
+  ]);
+
+  assert.match(errors[0], /ciclo de dependências: A -> A/);
+});
+
+test('detecta dependência que não é uma lista', () => {
+  const errors = validate([
+    { id: 'A', title: 'A', type: 'task', status: 'planned', dependsOn: 'B', filePath: 'a.md' }
+  ]);
+
+  assert.match(errors[0], /depends_on deve ser uma lista/);
+});
+
 test('resolve dependências e dependentes no contexto', () => {
   const context = contextFor(readEntities(root), 'PLN-009');
 
