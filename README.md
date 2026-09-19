@@ -6,6 +6,42 @@ Sistema de gestão local de engenharia, executado a partir do repositório consu
 
 Renderizar uma visão de acompanhamento a partir de arquivos Markdown locais, sem exigir banco ou serviço remoto.
 
+## Instalação local
+
+O pacote ainda não é publicado em registry. Para usá-lo, instale a partir de um clone local
+deste repositório. É preciso ter Node.js `>=22`.
+
+1. Clone o Planner em um diretório da máquina:
+
+   ```bash
+   git clone https://github.com/lucasbeskow/planner.git ~/code/planner
+   ```
+
+2. Na raiz do repositório consumidor, instale o pacote apontando para esse diretório:
+
+   ```bash
+   npm install --save-dev ~/code/planner
+   ```
+
+   O npm cria um link simbólico em `node_modules/planner` e registra a dependência
+   como `file:` no `package.json`. Alterações no clone do Planner valem na hora, sem reinstalar.
+   O caminho gravado é relativo à máquina: quem clonar o repositório consumidor precisa do
+   Planner no mesmo caminho ou precisa reinstalar com o próprio caminho.
+
+3. Inicialize e confira a instalação:
+
+   ```bash
+   npx planner init
+   npx planner validate
+   ```
+
+Para usar sem alterar o `package.json` do consumidor, crie um link global:
+
+```bash
+cd ~/code/planner && npm link
+cd <repositorio-consumidor> && npm link planner
+```
+
 ## Estado atual
 
 O protótipo é uma UI estática. O índice `.planner/index.json` é uma projeção gerada a partir dos arquivos Markdown versionados e oferece:
