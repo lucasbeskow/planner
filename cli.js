@@ -5,8 +5,9 @@ const { buildIndex, contextFor, readEntities, validate } = require('./core/plann
 
 const root = path.resolve(process.env.PLANNER_ROOT || path.join(__dirname, '..'));
 const rawArguments = process.argv.slice(2);
-const flags = new Set(rawArguments.filter(value => value.startsWith('--')));
-const positional = rawArguments.filter(value => !value.startsWith('--'));
+const isFlag = value => value.startsWith('-');
+const flags = new Set(rawArguments.filter(isFlag));
+const positional = rawArguments.filter(value => !isFlag(value));
 const [command = 'status', argument] = positional;
 
 const usage = `Uso: yarn planner <comando> [argumento] [--json]
@@ -18,7 +19,7 @@ Comandos:
   context <id>           mostra dependências e dependentes
   validate               valida entidades e dependências
   index                  regenera o índice derivado
-  help                   mostra esta ajuda
+  help, -h, --help       mostra esta ajuda
 
 --json retorna dados estruturados para agentes e scripts.`;
 
@@ -53,7 +54,7 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
         if (!argument) throw new Error('informe o id da entidade para show');
         const entity = entities.find(item => item.id === argument);
         if (!entity) throw new Error(`Entidade não encontrada: ${argument}`);
-        output(flags.has('--json') ? entity : `${entity.id}\n${entity.title}\n\n${entity.description}\n\nArquivo: ${entity.filePath}`);
+        output(flags.has('--json') ? entity : `${entity.id}\n${entity.title}\n\n${entity.body}\n\nArquivo: ${entity.filePath}`);
         break;
       }
       case 'context': {
@@ -65,9 +66,11 @@ if (flags.has('--help') || flags.has('-h') || command === 'help') {
       }
       case 'validate': {
         const errors = validate(entities);
-        if (errors.length) {
+        if (errors.length) process.exitCode = 1;
+        if (flags.has('--json')) {
+          output({ valid: errors.length === 0, errors, total: entities.length });
+        } else if (errors.length) {
           console.error(errors.map(error => `✗ ${error}`).join('\n'));
-          process.exitCode = 1;
         } else {
           output(`✓ ${entities.length} entidades válidas`);
         }

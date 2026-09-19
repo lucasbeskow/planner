@@ -3,17 +3,56 @@ const path = require('node:path');
 
 const DEFAULT_SOURCES = ['initiatives', 'tickets', 'specs', 'decisions', 'cycles'];
 
+// Subconjunto de YAML aceito no frontmatter (documentado em planner/README.md):
+// escalares, listas em bloco, listas inline e comentários com #.
+function stripComment(value) {
+  let quote = null;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value[index];
+    if (quote) {
+      if (char === quote) quote = null;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === '#' && (index === 0 || /\s/.test(value[index - 1]))) {
+      return value.slice(0, index);
+    }
+  }
+  return value;
+}
+
+function splitInlineList(content) {
+  const items = [];
+  let quote = null;
+  let current = '';
+  for (const char of content) {
+    if (quote) {
+      if (char === quote) quote = null;
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === ',') {
+      items.push(current);
+      current = '';
+      continue;
+    }
+    current += char;
+  }
+  items.push(current);
+  return items;
+}
+
 function parseScalar(value) {
   const trimmed = value.trim();
   if (trimmed === '') return '';
   if (trimmed === 'true') return true;
   if (trimmed === 'false') return false;
-  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  // Zeros à esquerda indicam identificadores, como 001, e permanecem texto.
+  if (/^-?(0|[1-9]\d*)(\.\d+)?$/.test(trimmed)) return Number(trimmed);
   if ((trimmed.startsWith('"') && trimmed.endsWith('"')) || (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
     return trimmed.slice(1, -1);
   }
   if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
-    return trimmed.slice(1, -1).split(',').map(item => parseScalar(item)).filter(item => item !== '');
+    const content = trimmed.slice(1, -1);
+    return content.trim() ? splitInlineList(content).map(item => parseScalar(item)) : [];
   }
   return trimmed;
 }
@@ -24,31 +63,43 @@ function parseFrontmatter(source, filePath) {
     return { attributes: {}, body: source.trim(), filePath };
   }
 
-  const end = lines.indexOf('---', 1);
+  const end = lines.findIndex((line, index) => index > 0 && line.trim() === '---');
   if (end < 0) throw new Error(`${filePath}: frontmatter não terminou com ---`);
 
   const attributes = {};
-  let currentArray;
+  let listKey = null;
   for (const line of lines.slice(1, end)) {
-    if (!line.trim()) continue;
-    const arrayItem = line.match(/^\s+-\s+(.+)$/);
-    if (arrayItem && currentArray) {
-      currentArray.push(parseScalar(arrayItem[1]));
+    const content = stripComment(line).trimEnd();
+    if (!content.trim()) continue;
+    const listItem = content.match(/^\s*-\s+(.+)$/);
+    if (listItem && listKey) {
+      if (!Array.isArray(attributes[listKey])) attributes[listKey] = [];
+      attributes[listKey].push(parseScalar(listItem[1]));
       continue;
     }
-    const field = line.match(/^([A-Za-z_][\w-]*):(?:\s*(.*))?$/);
+    const field = content.match(/^([A-Za-z_][\w-]*):(?:\s+(.*))?$/);
     if (!field) throw new Error(`${filePath}: linha inválida no frontmatter: ${line}`);
     const [, key, rawValue = ''] = field;
     if (rawValue.trim() === '') {
-      attributes[key] = [];
-      currentArray = attributes[key];
+      // Sem valor, a chave é nula até que itens de lista a transformem em lista.
+      attributes[key] = null;
+      listKey = key;
     } else {
       attributes[key] = parseScalar(rawValue);
-      currentArray = null;
+      listKey = null;
     }
   }
 
   return { attributes, body: lines.slice(end + 1).join('\n').trim(), filePath };
+}
+
+// Resumo exibido nos cards: o primeiro parágrafo da seção Objetivo ou, sem ela, do corpo.
+function summarize(body) {
+  const blocks = body.split(/\n\s*\n/).map(block => block.trim()).filter(Boolean);
+  const objective = blocks.findIndex(block => /^#{1,6}\s+objetivo\s*$/i.test(block));
+  const candidates = objective >= 0 ? blocks.slice(objective + 1) : blocks;
+  const paragraph = candidates.find(block => !block.startsWith('#') && !block.startsWith('```'));
+  return paragraph ? paragraph.split('\n').map(line => line.trim()).join(' ') : '';
 }
 
 function readConfig(root) {
@@ -70,8 +121,9 @@ function readEntities(root) {
     const parsed = parseFrontmatter(fs.readFileSync(filePath, 'utf8'), path.relative(root, filePath));
     return {
       ...parsed.attributes,
-      dependsOn: parsed.attributes.depends_on || [],
-      description: parsed.body.split('\n').filter(line => line.trim() && !line.startsWith('#')).join(' ').trim(),
+      dependsOn: parsed.attributes.depends_on ?? [],
+      description: summarize(parsed.body),
+      body: parsed.body,
       filePath: path.relative(root, filePath)
     };
   });
@@ -81,32 +133,35 @@ function readEntities(root) {
   return entities.sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0));
 }
 
-function validate(entities) {
-  const errors = [];
+// Cada problema guarda os ids envolvidos, para que o contexto de uma entidade filtre por
+// comparação exata em vez de procurar o id dentro da mensagem.
+function validationIssues(entities) {
+  const issues = [];
+  const report = (entityIds, message) => issues.push({ ids: entityIds.filter(Boolean), message });
   const ids = new Set();
   const allowedTypes = new Set(['initiative', 'task', 'decision', 'spec', 'cycle']);
   const allowedStatuses = new Set(['draft', 'planned', 'in_progress', 'blocked', 'done', 'canceled']);
 
   for (const entity of entities) {
-    if (!entity.id) errors.push(`${entity.filePath}: id obrigatório`);
-    if (!entity.title) errors.push(`${entity.filePath}: title obrigatório`);
-    if (ids.has(entity.id)) errors.push(`${entity.filePath}: id duplicado ${entity.id}`);
+    if (!entity.id) report([], `${entity.filePath}: id obrigatório`);
+    if (!entity.title) report([entity.id], `${entity.filePath}: title obrigatório`);
+    if (ids.has(entity.id)) report([entity.id], `${entity.filePath}: id duplicado ${entity.id}`);
     ids.add(entity.id);
-    if (entity.type && !allowedTypes.has(entity.type)) errors.push(`${entity.filePath}: type inválido ${entity.type}`);
-    if (entity.status && !allowedStatuses.has(entity.status)) errors.push(`${entity.filePath}: status inválido ${entity.status}`);
-    if (!Array.isArray(entity.dependsOn)) errors.push(`${entity.id || entity.filePath}: depends_on deve ser uma lista`);
+    if (entity.type && !allowedTypes.has(entity.type)) report([entity.id], `${entity.filePath}: type inválido ${entity.type}`);
+    if (entity.status && !allowedStatuses.has(entity.status)) report([entity.id], `${entity.filePath}: status inválido ${entity.status}`);
+    if (!Array.isArray(entity.dependsOn)) report([entity.id], `${entity.id || entity.filePath}: depends_on deve ser uma lista`);
   }
 
   for (const entity of entities) {
     const dependencies = Array.isArray(entity.dependsOn) ? entity.dependsOn : [];
     for (const dependency of dependencies) {
-      if (!ids.has(dependency)) errors.push(`${entity.id}: dependência inexistente ${dependency}`);
+      if (!ids.has(dependency)) report([entity.id], `${entity.id}: dependência inexistente ${dependency}`);
     }
   }
 
   const states = new Map();
   const stack = [];
-  const cycles = new Set();
+  const cycles = new Map();
   const byId = new Map(entities.map(entity => [entity.id, entity]));
 
   function visit(id) {
@@ -119,7 +174,8 @@ function validate(entities) {
       if (!byId.has(dependency)) continue;
       if (states.get(dependency) === 'visiting') {
         const start = stack.indexOf(dependency);
-        cycles.add([...stack.slice(start), dependency].join(' -> '));
+        const cycle = [...stack.slice(start), dependency];
+        cycles.set(cycle.join(' -> '), cycle);
       } else if (states.get(dependency) !== 'visited') {
         visit(dependency);
       }
@@ -133,9 +189,13 @@ function validate(entities) {
     if (!states.has(entity.id)) visit(entity.id);
   }
 
-  for (const cycle of cycles) errors.push(`ciclo de dependências: ${cycle}`);
+  for (const [label, cycle] of cycles) report([...new Set(cycle)], `ciclo de dependências: ${label}`);
 
-  return errors;
+  return issues;
+}
+
+function validate(entities) {
+  return validationIssues(entities).map(issue => issue.message);
 }
 
 function summary(entities) {
@@ -144,7 +204,7 @@ function summary(entities) {
     const key = entity.status === 'in_progress' ? 'inProgress' : entity.status;
     if (key in result) result[key] += 1;
     return result;
-  }, { total: 0, planned: 0, inProgress: 0, blocked: 0, done: 0 });
+  }, { total: 0, draft: 0, planned: 0, inProgress: 0, blocked: 0, done: 0, canceled: 0 });
 }
 
 function repositoryName(root, config) {
@@ -192,11 +252,12 @@ function buildIndex(root, entities) {
 function contextFor(entities, id) {
   const entity = entities.find(item => item.id === id);
   if (!entity) return null;
+  const dependsOn = item => (Array.isArray(item.dependsOn) ? item.dependsOn : []);
   return {
     entity,
-    dependencies: entity.dependsOn.map(dependency => entities.find(item => item.id === dependency)).filter(Boolean),
-    dependents: entities.filter(item => item.dependsOn.includes(id)),
-    validation: validate(entities).filter(error => error.startsWith(`${id}:`) || error.includes(id))
+    dependencies: dependsOn(entity).map(dependency => entities.find(item => item.id === dependency)).filter(Boolean),
+    dependents: entities.filter(item => dependsOn(item).includes(id)),
+    validation: validationIssues(entities).filter(issue => issue.ids.includes(id)).map(issue => issue.message)
   };
 }
 

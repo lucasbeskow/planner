@@ -12,7 +12,7 @@ Claude Code e outros clientes não precisam manter integrações específicas de
 | Listagem | `yarn planner list [status] --json` | `planner_list` |
 | Detalhe | `yarn planner show <id> --json` | `planner_show` |
 | Contexto | `yarn planner context <id> --json` | `planner_context` |
-| Validação | `yarn planner validate` | `planner_validate` |
+| Validação | `yarn planner validate --json` | `planner_validate` |
 
 Os comandos e ferramentas carregam os Markdown atuais. `.planner/index.json` é somente uma
 projeção para a UI e não deve ser tratado como fonte de escrita.

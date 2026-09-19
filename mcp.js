@@ -83,7 +83,12 @@ function callTool(name, argumentsValue = {}) {
 }
 
 function respond(message) {
-  if (message.method === 'notifications/initialized') return;
+  if (message === null || typeof message !== 'object' || Array.isArray(message)) {
+    process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32600, message: 'Requisição inválida' } })}\n`);
+    return;
+  }
+  // Notificações JSON-RPC não têm id e nunca recebem resposta.
+  if (!('id' in message)) return;
 
   let response;
   try {
@@ -99,6 +104,9 @@ function respond(message) {
           }
         };
         break;
+      case 'ping':
+        response = { jsonrpc: '2.0', id: message.id, result: {} };
+        break;
       case 'tools/list':
         response = { jsonrpc: '2.0', id: message.id, result: { tools } };
         break;
@@ -112,14 +120,14 @@ function respond(message) {
       default:
         response = {
           jsonrpc: '2.0',
-          id: message.id ?? null,
+          id: message.id,
           error: { code: -32601, message: `Método não encontrado: ${message.method}` }
         };
     }
   } catch (error) {
     response = {
       jsonrpc: '2.0',
-      id: message.id ?? null,
+      id: message.id,
       error: { code: -32603, message: error.message }
     };
   }

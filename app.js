@@ -1,11 +1,14 @@
+// Status opcionais só ganham card e coluna quando existe algum item neles.
 const STATUS = [
+  ['draft', 'Rascunho', { optional: true }],
   ['planned', 'Planejado'],
   ['in_progress', 'Em andamento'],
   ['blocked', 'Bloqueado'],
-  ['done', 'Concluído']
+  ['done', 'Concluído'],
+  ['canceled', 'Cancelado', { optional: true }]
 ];
 
-const statusLabel = new Map(STATUS);
+const statusLabel = new Map(STATUS.map(([key, label]) => [key, label]));
 
 async function loadBranch() {
   try {
@@ -26,7 +29,7 @@ async function loadData() {
 }
 
 function escapeHtml(value) {
-  return String(value)
+  return String(value ?? '')
     .replaceAll('&', '&amp;')
     .replaceAll('<', '&lt;')
     .replaceAll('>', '&gt;')
@@ -35,7 +38,11 @@ function escapeHtml(value) {
 }
 
 function render(data, branch) {
-  const tickets = data.tickets;
+  const entities = data.tickets;
+  const initiatives = entities.filter(entity => entity.type === 'initiative');
+  const tickets = entities.filter(entity => entity.type !== 'initiative');
+  const byStatus = key => tickets.filter(ticket => ticket.status === key);
+  const statuses = STATUS.filter(([key, , options]) => !options?.optional || byStatus(key).length);
   const app = document.querySelector('#app');
   app.innerHTML = `
     <main class="shell">
@@ -48,14 +55,28 @@ function render(data, branch) {
         <span class="local-badge">LOCAL · GIT-NATIVE</span>
       </header>
 
-      <section class="summary-grid" aria-label="Resumo da iniciativa">
-        ${STATUS.map(([key, label]) => `
+      <section class="summary-grid" aria-label="Resumo dos tickets">
+        ${statuses.map(([key, label]) => `
           <article class="summary-card status-${key}">
             <span>${label}</span>
-            <strong>${data.summary[toSummaryKey(key)] ?? 0}</strong>
+            <strong>${byStatus(key).length}</strong>
           </article>
         `).join('')}
       </section>
+
+      ${initiatives.length ? `
+        <section class="initiatives" aria-labelledby="initiatives-heading">
+          <h2 id="initiatives-heading">Iniciativas</h2>
+          <div class="initiative-list">
+            ${initiatives.map(initiative => `
+              <button class="initiative" type="button" data-ticket="${escapeHtml(initiative.id)}">
+                <span class="ticket-id">${escapeHtml(initiative.id)} · ${escapeHtml(statusLabel.get(initiative.status) ?? initiative.status ?? '')}</span>
+                <strong>${escapeHtml(initiative.title)}</strong>
+              </button>
+            `).join('')}
+          </div>
+        </section>
+      ` : ''}
 
       <section class="workspace">
         <div class="section-heading">
@@ -63,17 +84,17 @@ function render(data, branch) {
             <p class="eyebrow">M0 · leitura e visualização</p>
             <h2>Backlog da iniciativa</h2>
           </div>
-          <span class="muted">${tickets.length} entidades indexadas</span>
+          <span class="muted">${tickets.length} tickets indexados</span>
         </div>
-        <div class="board">
-          ${STATUS.map(([key, label]) => `
+        <div class="board" style="--columns: ${statuses.length}">
+          ${statuses.map(([key, label]) => `
             <section class="column" aria-labelledby="column-${key}">
               <div class="column-heading">
                 <h3 id="column-${key}">${label}</h3>
-                <span>${tickets.filter(ticket => ticket.status === key).length}</span>
+                <span>${byStatus(key).length}</span>
               </div>
               <div class="ticket-list">
-                ${tickets.filter(ticket => ticket.status === key).map(ticketCard).join('') || '<p class="empty">Nenhum item</p>'}
+                ${byStatus(key).map(ticketCard).join('') || '<p class="empty">Nenhum item</p>'}
               </div>
             </section>
           `).join('')}
@@ -83,12 +104,8 @@ function render(data, branch) {
   `;
 
   app.querySelectorAll('[data-ticket]').forEach(card => {
-    card.addEventListener('click', () => showDetails(tickets.find(ticket => ticket.id === card.dataset.ticket)));
+    card.addEventListener('click', () => showDetails(entities.find(entity => entity.id === card.dataset.ticket)));
   });
-}
-
-function toSummaryKey(status) {
-  return { planned: 'planned', in_progress: 'inProgress', blocked: 'blocked', done: 'done' }[status];
 }
 
 function ticketCard(ticket) {
@@ -114,10 +131,10 @@ function showDetails(ticket) {
     <h2>${escapeHtml(ticket.title)}</h2>
     <p>${escapeHtml(ticket.description)}</p>
     <dl class="details-list">
-      <div><dt>Status</dt><dd>${escapeHtml(statusLabel.get(ticket.status))}</dd></div>
-      <div><dt>Prioridade</dt><dd>${escapeHtml(ticket.priority)}</dd></div>
-      <div><dt>Fase</dt><dd>${escapeHtml(ticket.phase)}</dd></div>
-      <div><dt>Labels</dt><dd>${ticket.labels.map(label => `<span class="label">${escapeHtml(label)}</span>`).join(' ')}</dd></div>
+      <div><dt>Status</dt><dd>${escapeHtml(statusLabel.get(ticket.status) ?? ticket.status ?? '—')}</dd></div>
+      <div><dt>Prioridade</dt><dd>${escapeHtml(ticket.priority ?? '—')}</dd></div>
+      <div><dt>Fase</dt><dd>${escapeHtml(ticket.phase ?? '—')}</dd></div>
+      <div><dt>Labels</dt><dd>${ticket.labels.length ? ticket.labels.map(label => `<span class="label">${escapeHtml(label)}</span>`).join(' ') : '—'}</dd></div>
       <div><dt>Depende de</dt><dd>${ticket.dependsOn.length ? ticket.dependsOn.map(id => escapeHtml(id)).join(', ') : 'Nenhuma dependência'}</dd></div>
       <div><dt>Fonte</dt><dd><code>${escapeHtml(ticket.source || 'índice')}</code></dd></div>
     </dl>

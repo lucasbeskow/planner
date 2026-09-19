@@ -6,6 +6,7 @@ const path = require('node:path');
 const test = require('node:test');
 const util = require('node:util');
 const { buildIndex, contextFor, parseFrontmatter, readEntities, validate } = require('../core/planner');
+const { createPlannerServer } = require('../serve');
 
 const root = path.resolve(__dirname, '../..');
 const cliPath = path.join(root, 'planner/cli.js');
@@ -52,26 +53,41 @@ Descrição de ${entity.id}.
 
 const fixtureRoot = createFixture();
 const configuredFixtureRoot = createFixture({ repository: 'repositorio-fixture', initiative: 'Iniciativa configurada' });
+const invalidFixtureRoot = createFixture();
+fs.writeFileSync(path.join(invalidFixtureRoot, '.planner/tickets/FIX-005-invalido.md'), `---
+id: FIX-005
+type: task
+title: Entidade inválida
+status: planned
+depends_on:
+  - FIX-999
+---
+`);
 test.after(() => {
-  fs.rmSync(fixtureRoot, { recursive: true, force: true });
-  fs.rmSync(configuredFixtureRoot, { recursive: true, force: true });
+  for (const fixture of [fixtureRoot, configuredFixtureRoot, invalidFixtureRoot]) {
+    fs.rmSync(fixture, { recursive: true, force: true });
+  }
 });
 
 function runCli(...args) {
+  return runCliIn(fixtureRoot, ...args);
+}
+
+function runCliIn(plannerRoot, ...args) {
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: root,
     encoding: 'utf8',
-    env: { ...process.env, PLANNER_ROOT: fixtureRoot }
+    env: { ...process.env, PLANNER_ROOT: plannerRoot }
   });
 }
 
-function runMcp(messages) {
+function runMcp(messages, plannerRoot = fixtureRoot) {
   const input = `${messages.map(message => JSON.stringify(message)).join('\n')}\n`;
   const processResult = spawnSync(process.execPath, [mcpPath], {
     cwd: root,
     input,
     encoding: 'utf8',
-    env: { ...process.env, PLANNER_ROOT: fixtureRoot }
+    env: { ...process.env, PLANNER_ROOT: plannerRoot }
   });
   return { ...processResult, responses: processResult.stdout.trim().split('\n').filter(Boolean).map(line => JSON.parse(line)) };
 }
@@ -99,6 +115,71 @@ Conteúdo.`, 'typed.md');
   assert.deepEqual(parsed.attributes.labels, ['core', 'parser']);
   assert.equal(parsed.attributes.quoted, 'texto');
   assert.equal(parsed.body, 'Conteúdo.');
+});
+
+test('segue o subconjunto de YAML documentado', () => {
+  const parsed = parseFrontmatter(`---
+# comentário de linha
+id: 001 # comentário no fim
+url: http://exemplo.com/a#b
+zero: 0
+decimal: 1.5
+labels: ["a, b", c]
+empty_inline: []
+empty:
+block:
+- sem recuo
+  - "com # dentro"
+---
+`, 'yaml.md');
+
+  assert.deepEqual(parsed.attributes, {
+    id: '001',
+    url: 'http://exemplo.com/a#b',
+    zero: 0,
+    decimal: 1.5,
+    labels: ['a, b', 'c'],
+    empty_inline: [],
+    empty: null,
+    block: ['sem recuo', 'com # dentro']
+  });
+});
+
+test('exige espaço depois dos dois-pontos', () => {
+  assert.throws(() => parseFrontmatter('---\nid:PLN-1\n---', 'colado.md'), /colado\.md: linha inválida no frontmatter/);
+});
+
+test('resume a descrição pelo primeiro parágrafo do objetivo', () => {
+  const [entity] = readEntities(fixtureRoot);
+  const withObjective = createFixture();
+  const objectivePath = path.join(withObjective, '.planner/tickets/FIX-002-planejado.md');
+  fs.writeFileSync(objectivePath, `---
+id: FIX-002
+title: Com contexto
+---
+
+Introdução antes do objetivo.
+
+## Objetivo
+
+Primeira linha
+continua aqui.
+
+Segundo parágrafo.
+`);
+  const noObjective = createFixture();
+  fs.writeFileSync(path.join(noObjective, '.planner/tickets/FIX-002-planejado.md'), '---\nid: FIX-002\ntitle: Sem objetivo\n---\n\n# Título\n\nPrimeiro parágrafo.\n\nSegundo.\n');
+
+  try {
+    const described = readEntities(withObjective).find(item => item.id === 'FIX-002');
+    assert.equal(entity.description, 'Descrição de FIX-001.');
+    assert.equal(described.description, 'Primeira linha continua aqui.');
+    assert.match(described.body, /Segundo parágrafo/);
+    assert.equal(readEntities(noObjective).find(item => item.id === 'FIX-002').description, 'Primeiro parágrafo.');
+  } finally {
+    fs.rmSync(withObjective, { recursive: true, force: true });
+    fs.rmSync(noObjective, { recursive: true, force: true });
+  }
 });
 
 test('aceita arquivos sem frontmatter', () => {
@@ -166,6 +247,44 @@ test('resolve dependências e dependentes no contexto', () => {
   assert.deepEqual(context.dependents.map(entity => entity.id), ['FIX-003']);
 });
 
+test('o contexto filtra validações pelo id exato', () => {
+  const context = contextFor([
+    { id: 'PLN-1', title: 'Um', dependsOn: [], filePath: 'a.md' },
+    { id: 'PLN-10', title: 'Dez', dependsOn: ['PLN-99'], filePath: 'b.md' }
+  ], 'PLN-1');
+
+  assert.deepEqual(context.validation, []);
+});
+
+test('o contexto tolera depends_on inválido e reporta o erro', () => {
+  const entities = [
+    { id: 'A', title: 'A', dependsOn: 'B', filePath: 'a.md' },
+    { id: 'B', title: 'B', dependsOn: [], filePath: 'b.md' },
+    { id: 'C', title: 'C', dependsOn: ['B'], filePath: 'c.md' }
+  ];
+
+  const context = contextFor(entities, 'A');
+  assert.deepEqual(context.dependencies, []);
+  assert.deepEqual(context.validation, ['A: depends_on deve ser uma lista']);
+  assert.deepEqual(contextFor(entities, 'B').dependents.map(entity => entity.id), ['C']);
+});
+
+test('o contexto inclui ciclos que envolvem a entidade', () => {
+  const context = contextFor([
+    { id: 'A', title: 'A', dependsOn: ['B'], filePath: 'a.md' },
+    { id: 'B', title: 'B', dependsOn: ['A'], filePath: 'b.md' }
+  ], 'B');
+
+  assert.deepEqual(context.validation, ['ciclo de dependências: A -> B -> A']);
+});
+
+test('o resumo conta todos os status aceitos', () => {
+  const statuses = ['draft', 'planned', 'in_progress', 'blocked', 'done', 'canceled'];
+  const index = buildIndex(fixtureRoot, statuses.map((status, position) => ({ id: `S-${position}`, status, dependsOn: [] })));
+
+  assert.deepEqual(index.summary, { total: 6, draft: 1, planned: 1, inProgress: 1, blocked: 1, done: 1, canceled: 1 });
+});
+
 test('o índice versionado é consistente', () => {
   const index = JSON.parse(fs.readFileSync(path.join(root, '.planner/index.json'), 'utf8'));
 
@@ -216,7 +335,7 @@ test('o índice é uma projeção regenerável dos arquivos Markdown', () => {
   const index = buildIndex(fixtureRoot, entities);
 
   assert.equal(index.summary.total, entities.length);
-  assert.deepEqual(index.summary, { total: 4, planned: 1, inProgress: 1, blocked: 1, done: 1 });
+  assert.deepEqual(index.summary, { total: 4, draft: 0, planned: 1, inProgress: 1, blocked: 1, done: 1, canceled: 0 });
   assert.equal(index.tickets.find(ticket => ticket.id === 'FIX-003').status, 'done');
   assert.equal(index.tickets.find(ticket => ticket.id === 'FIX-003').source, '.planner/tickets/FIX-003-concluido.md');
 });
@@ -227,7 +346,7 @@ test('o índice contém os dados necessários para o dashboard', () => {
 
   assert.ok(index.repository.name);
   assert.ok(index.repository.initiative);
-  assert.deepEqual(Object.keys(index.summary), ['total', 'planned', 'inProgress', 'blocked', 'done']);
+  assert.deepEqual(Object.keys(index.summary), ['total', 'draft', 'planned', 'inProgress', 'blocked', 'done', 'canceled']);
   assert.deepEqual(Object.keys(ticket).sort(), ['dependsOn', 'description', 'id', 'labels', 'phase', 'priority', 'source', 'status', 'title', 'type']);
 });
 
@@ -244,7 +363,31 @@ test('a CLI expõe saída estruturada para agentes', () => {
   assert.equal(JSON.parse(context.stdout).entity.id, 'FIX-002');
 });
 
+test('a CLI valida com saída estruturada', () => {
+  const valid = runCli('validate', '--json');
+  const invalid = runCliIn(invalidFixtureRoot, 'validate', '--json');
+  const invalidText = runCliIn(invalidFixtureRoot, 'validate');
+
+  assert.equal(valid.status, 0);
+  assert.deepEqual(JSON.parse(valid.stdout), { valid: true, errors: [], total: 4 });
+  assert.equal(invalid.status, 1);
+  assert.deepEqual(JSON.parse(invalid.stdout), { valid: false, errors: ['FIX-005: dependência inexistente FIX-999'], total: 5 });
+  assert.equal(invalidText.status, 1);
+  assert.match(invalidText.stderr, /✗ FIX-005: dependência inexistente FIX-999/);
+});
+
+test('a CLI mostra o corpo completo em show', () => {
+  const show = runCli('show', 'FIX-002');
+
+  assert.equal(show.status, 0);
+  assert.match(show.stdout, /## Objetivo\n\nDescrição de FIX-002\./);
+});
+
 test('a CLI oferece ajuda e erros acionáveis', () => {
+  const shortHelp = runCli('-h');
+  assert.equal(shortHelp.status, 0);
+  assert.match(shortHelp.stdout, /^Uso: yarn planner/);
+
   const help = runCli('--help');
   const missing = runCli('show');
   const unknown = runCli('nao-existe');
@@ -278,6 +421,60 @@ test('o servidor MCP expõe ferramentas somente leitura', () => {
   ]);
   assert.equal(JSON.parse(mcp.responses[2].result.content[0].text).total, Object.keys(fixtureEntities).length);
   assert.equal(JSON.parse(mcp.responses[3].result.content[0].text).entity.id, 'FIX-002');
+});
+
+test('o servidor MCP responde ping e ignora notificações', () => {
+  const mcp = runMcp([
+    { jsonrpc: '2.0', method: 'notifications/initialized' },
+    { jsonrpc: '2.0', method: 'notifications/cancelled', params: { requestId: 1 } },
+    { jsonrpc: '2.0', id: 1, method: 'ping' },
+    { jsonrpc: '2.0', method: 'metodo/desconhecido' },
+    { jsonrpc: '2.0', id: 2, method: 'metodo/desconhecido' }
+  ]);
+
+  assert.equal(mcp.status, 0);
+  assert.deepEqual(mcp.responses.map(response => response.id), [1, 2]);
+  assert.deepEqual(mcp.responses[0].result, {});
+  assert.equal(mcp.responses[1].error.code, -32601);
+});
+
+test('CLI e MCP retornam a mesma validação', () => {
+  for (const plannerRoot of [fixtureRoot, invalidFixtureRoot]) {
+    const cliValidation = JSON.parse(runCliIn(plannerRoot, 'validate', '--json').stdout);
+    const mcp = runMcp([
+      { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'planner_validate', arguments: {} } }
+    ], plannerRoot);
+
+    assert.deepEqual(JSON.parse(mcp.responses[0].result.content[0].text), cliValidation);
+  }
+});
+
+test('o servidor local expõe somente a UI, o Planner e o branch', async () => {
+  fs.mkdirSync(path.join(fixtureRoot, 'planner'), { recursive: true });
+  fs.mkdirSync(path.join(fixtureRoot, '.git'), { recursive: true });
+  fs.writeFileSync(path.join(fixtureRoot, 'planner/index.html'), '<main></main>');
+  fs.writeFileSync(path.join(fixtureRoot, '.git/HEAD'), 'ref: refs/heads/fixture\n');
+  fs.writeFileSync(path.join(fixtureRoot, '.git/config'), '[core]');
+  fs.writeFileSync(path.join(fixtureRoot, 'segredo.txt'), 'não expor');
+
+  const server = createPlannerServer(fixtureRoot);
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
+  const base = `http://127.0.0.1:${server.address().port}`;
+  const get = (pathname, options) => fetch(`${base}${pathname}`, { redirect: 'manual', ...options });
+
+  try {
+    assert.equal((await get('/')).headers.get('location'), '/planner/');
+    assert.equal(await (await get('/planner/')).text(), '<main></main>');
+    assert.equal((await get('/.planner/tickets/FIX-002-planejado.md')).status, 200);
+    assert.equal(await (await get('/.git/HEAD')).text(), 'ref: refs/heads/fixture\n');
+    assert.equal((await get('/.git/config')).status, 404);
+    assert.equal((await get('/segredo.txt')).status, 404);
+    assert.equal((await get('/planner/%2e%2e/segredo.txt')).status, 404);
+    assert.equal((await get('/planner/', { method: 'POST' })).status, 405);
+  } finally {
+    server.close();
+    for (const file of ['planner', '.git', 'segredo.txt']) fs.rmSync(path.join(fixtureRoot, file), { recursive: true, force: true });
+  }
 });
 
 test('CLI e MCP retornam o mesmo contrato de domínio', () => {
